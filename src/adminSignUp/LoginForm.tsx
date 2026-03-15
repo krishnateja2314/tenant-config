@@ -73,7 +73,7 @@ export function LoginForm() {
       className="w-full"
     >
       <div className="mb-8">
-        <h2 className="text-2xl font-bold text-text-primary tracking-tight">Admin Portal</h2>
+        <h2 className="text-2xl font-bold text-text-primary tracking-tight">Tenant Configuration</h2>
         <p className="text-sm text-text-muted mt-1.5">
           Sign in to your tenant configuration dashboard
         </p>
