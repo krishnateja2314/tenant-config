@@ -3,7 +3,7 @@ import type { AuthConfigPayload } from "../api/authConfig.api";
 
 interface AuthConfigState {
   config: AuthConfigPayload | null;
-  isDirty: boolean; // unsaved changes
+  isDirty: boolean;
 
   setConfig: (config: AuthConfigPayload) => void;
   patchConfig: (patch: Partial<AuthConfigPayload>) => void;
@@ -11,10 +11,6 @@ interface AuthConfigState {
   clearConfig: () => void;
 }
 
-/**
- * Auth Config store — NOT persisted (fresh fetch every session).
- * Tracks the loaded configuration and whether there are unsaved local changes.
- */
 export const useAuthConfigStore = create<AuthConfigState>()((set) => ({
   config: null,
   isDirty: false,
@@ -31,3 +27,14 @@ export const useAuthConfigStore = create<AuthConfigState>()((set) => ({
 
   clearConfig: () => set({ config: null, isDirty: false }),
 }));
+
+// ── Role helper ───────────────────────────────────────────────────────────────
+// Import this wherever you need to gate editing.
+// TENANT_ADMIN: full read + write
+// DOMAIN_ADMIN: read only — can view config but not save changes
+import { useAuthStore } from "./auth.store";
+
+export function useIsReadOnly(): boolean {
+  const role = useAuthStore((s) => s.admin?.role);
+  return role !== "TENANT_ADMIN";
+}

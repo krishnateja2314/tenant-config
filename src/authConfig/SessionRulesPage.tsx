@@ -2,10 +2,11 @@ import { motion, AnimatePresence } from "framer-motion";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { getAuthConfig, updateAuthConfig } from "../api/authConfig.api";
 import { useAuthStore } from "../store/auth.store";
-import { useAuthConfigStore } from "../store/authConfig.store";
+import { useAuthConfigStore, useIsReadOnly } from "../store/authConfig.store";
 import { Button, Alert, Card, Spinner } from "../components/ui";
 import { useState, useEffect } from "react";
 import { Slider } from "@mui/material";
+
 function SliderField({
   label,
   description,
@@ -14,6 +15,7 @@ function SliderField({
   max,
   unit,
   onChange,
+  disabled,
 }: {
   label: string;
   description: string;
@@ -22,17 +24,16 @@ function SliderField({
   max: number;
   unit: string;
   onChange: (v: number) => void;
+  disabled?: boolean;
 }) {
-  // Defend against undefined/missing API data to prevent crashes
   const safeValue = Number.isFinite(value) ? value : min;
 
-  // MUI passes (event, newValue) to the onChange handler
   const handleSliderChange = (_event: Event, newValue: number | number[]) => {
-    onChange(newValue as number);
+    if (!disabled) onChange(newValue as number);
   };
 
   return (
-    <div className="space-y-2">
+    <div className={`space-y-2 ${disabled ? "opacity-50" : ""}`}>
       <div className="flex items-center justify-between">
         <p className="text-sm font-semibold text-text-primary">{label}</p>
         <span className="text-sm font-bold text-accent tabular-nums">
@@ -42,15 +43,15 @@ function SliderField({
       </div>
       <p className="text-xs text-text-muted">{description}</p>
 
-      {/* Added horizontal padding to ensure the thumb doesn't clip on the edges */}
       <div className="pt-2 px-1">
         <Slider
           value={safeValue}
           min={min}
           max={max}
           onChange={handleSliderChange}
+          disabled={disabled}
           sx={{
-            color: "#4f6ef7", // Matches your black/dark accent theme
+            color: "#4f6ef7",
             padding: "13px 0",
             "& .MuiSlider-thumb": {
               width: 16,
@@ -69,8 +70,14 @@ function SliderField({
             "& .MuiSlider-rail": {
               height: 6,
               borderRadius: 3,
-              backgroundColor: "#e5e7eb", // Tailwind border color (gray-200)
+              backgroundColor: "#1f2330",
               opacity: 1,
+            },
+            "&.Mui-disabled": {
+              color: "#636880",
+              "& .MuiSlider-thumb": {
+                backgroundColor: "#636880",
+              },
             },
           }}
         />
@@ -87,6 +94,7 @@ function SliderField({
 export function SessionRulesPage() {
   const admin = useAuthStore((s) => s.admin);
   const tenantId = admin?.tenantId ?? "";
+  const isReadOnly = useIsReadOnly();
 
   const { config, setConfig, patchConfig, resetDirty, isDirty } =
     useAuthConfigStore((s) => ({
@@ -155,8 +163,9 @@ export function SessionRulesPage() {
             Control admin session lifetime and account lockout behaviour
           </p>
         </motion.div>
+
         <AnimatePresence>
-          {isDirty && (
+          {isDirty && !isReadOnly && (
             <motion.div
               initial={{ opacity: 0, scale: 0.9 }}
               animate={{ opacity: 1, scale: 1 }}
@@ -183,6 +192,21 @@ export function SessionRulesPage() {
             <Alert type={saveStatus.type} message={saveStatus.text} />
           </div>
         )}
+        {isReadOnly && (
+          <motion.div
+            initial={{ opacity: 0, y: -4 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0 }}
+            className="mb-6 flex items-center gap-2 px-4 py-3 bg-amber-500/10 border border-amber-500/20 rounded-lg"
+          >
+            <span className="text-amber-400 text-xs font-semibold">
+              View only —
+            </span>
+            <span className="text-amber-400/80 text-xs">
+              Your role does not have permission to modify these settings.
+            </span>
+          </motion.div>
+        )}
       </AnimatePresence>
 
       <div className="space-y-6">
@@ -202,6 +226,7 @@ export function SessionRulesPage() {
               min={5}
               max={1440}
               unit="min"
+              disabled={isReadOnly}
               onChange={(v) => patchConfig({ sessionTimeoutMinutes: v })}
             />
           </Card>
@@ -224,6 +249,7 @@ export function SessionRulesPage() {
                 min={1}
                 max={20}
                 unit="attempts"
+                disabled={isReadOnly}
                 onChange={(v) => patchConfig({ maxLoginAttempts: v })}
               />
               <SliderField
@@ -233,6 +259,7 @@ export function SessionRulesPage() {
                 min={1}
                 max={1440}
                 unit="min"
+                disabled={isReadOnly}
                 onChange={(v) => patchConfig({ lockoutDurationMinutes: v })}
               />
             </div>

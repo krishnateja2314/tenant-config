@@ -2,7 +2,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { getAuthConfig, updateAuthConfig } from "../api/authConfig.api";
 import { useAuthStore } from "../store/auth.store";
-import { useAuthConfigStore } from "../store/authConfig.store";
+import { useAuthConfigStore, useIsReadOnly } from "../store/authConfig.store";
 import { Toggle, Button, Badge, Alert, Spinner, Card } from "../components/ui";
 import { useEffect, useState } from "react";
 
@@ -10,19 +10,29 @@ export function AuthSettingsPage() {
   const admin = useAuthStore((s) => s.admin);
   const tenantId = admin?.tenantId ?? "";
 
-  const { setConfig, patchConfig, resetDirty, config, isDirty } = useAuthConfigStore((s) => ({
-    setConfig: s.setConfig,
-    patchConfig: s.patchConfig,
-    resetDirty: s.resetDirty,
-    config: s.config,
-    isDirty: s.isDirty,
-  }));
+  const { setConfig, patchConfig, resetDirty, config, isDirty } =
+    useAuthConfigStore((s) => ({
+      setConfig: s.setConfig,
+      patchConfig: s.patchConfig,
+      resetDirty: s.resetDirty,
+      config: s.config,
+      isDirty: s.isDirty,
+    }));
 
-  const [saveStatus, setSaveStatus] = useState<{ type: "success" | "error"; text: string } | null>(null);
+  const [saveStatus, setSaveStatus] = useState<{
+    type: "success" | "error";
+    text: string;
+  } | null>(null);
+  const isReadOnly = useIsReadOnly();
 
   const queryClient = useQueryClient();
 
-  const { isLoading, isError, error, data: fetchedConfig } = useQuery({
+  const {
+    isLoading,
+    isError,
+    error,
+    data: fetchedConfig,
+  } = useQuery({
     queryKey: ["auth-config", tenantId],
     queryFn: () => getAuthConfig(tenantId),
     enabled: !!tenantId,
@@ -37,7 +47,10 @@ export function AuthSettingsPage() {
     mutationFn: () => updateAuthConfig(tenantId, config!),
     onSuccess: (res) => {
       if (res.success) {
-        setSaveStatus({ type: "success", text: "Configuration saved successfully." });
+        setSaveStatus({
+          type: "success",
+          text: "Configuration saved successfully.",
+        });
         resetDirty();
         queryClient.invalidateQueries({ queryKey: ["auth-config", tenantId] });
       } else {
@@ -46,7 +59,10 @@ export function AuthSettingsPage() {
       setTimeout(() => setSaveStatus(null), 3000);
     },
     onError: () => {
-      setSaveStatus({ type: "error", text: "Failed to save. Please try again." });
+      setSaveStatus({
+        type: "error",
+        text: "Failed to save. Please try again.",
+      });
       setTimeout(() => setSaveStatus(null), 3000);
     },
   });
@@ -62,27 +78,39 @@ export function AuthSettingsPage() {
   if (isError) {
     return (
       <div className="p-8">
-        <Alert type="error" message={(error as Error)?.message ?? "Failed to load authentication configuration."} />
+        <Alert
+          type="error"
+          message={
+            (error as Error)?.message ??
+            "Failed to load authentication configuration."
+          }
+        />
       </div>
     );
   }
 
   if (!config) {
-    return <div className="flex items-center justify-center h-64"><Spinner size="lg" /></div>;
+    return (
+      <div className="flex items-center justify-center h-64">
+        <Spinner size="lg" />
+      </div>
+    );
   }
 
   const authMethods = [
     {
       key: "passwordEnabled" as const,
       label: "Password Authentication",
-      description: "Allow users to sign in with email and password. Recommended to keep enabled.",
+      description:
+        "Allow users to sign in with email and password. Recommended to keep enabled.",
       badge: config.passwordEnabled ? "success" : "warning",
       badgeText: config.passwordEnabled ? "Active" : "Disabled",
     },
     {
       key: "ssoEnabled" as const,
       label: "Single Sign-On (SSO)",
-      description: "Enable SAML or OAuth-based SSO for enterprise identity providers.",
+      description:
+        "Enable SAML or OAuth-based SSO for enterprise identity providers.",
       badge: config.ssoEnabled ? "success" : "default",
       badgeText: config.ssoEnabled ? "Active" : "Off",
     },
@@ -96,7 +124,8 @@ export function AuthSettingsPage() {
     {
       key: "mfaEnabled" as const,
       label: "Multi-Factor Authentication (MFA)",
-      description: "Require a second factor for all admin sign-ins. Highly recommended.",
+      description:
+        "Require a second factor for all admin sign-ins. Highly recommended.",
       badge: config.mfaEnabled ? "success" : "error",
       badgeText: config.mfaEnabled ? "Enforced" : "Not Enforced",
     },
@@ -106,8 +135,13 @@ export function AuthSettingsPage() {
     <div className="p-8 max-w-3xl">
       {/* Header */}
       <div className="flex items-start justify-between mb-8">
-        <motion.div initial={{ opacity: 0, y: -8 }} animate={{ opacity: 1, y: 0 }}>
-          <h1 className="text-2xl font-black text-text-primary tracking-tight">Authentication Settings</h1>
+        <motion.div
+          initial={{ opacity: 0, y: -8 }}
+          animate={{ opacity: 1, y: 0 }}
+        >
+          <h1 className="text-2xl font-black text-text-primary tracking-tight">
+            Authentication Settings
+          </h1>
           <p className="text-sm text-text-muted mt-1">
             Configure login mechanisms for tenant{" "}
             <span className="text-accent font-medium">{tenantId}</span>
@@ -115,15 +149,21 @@ export function AuthSettingsPage() {
         </motion.div>
 
         <AnimatePresence>
-          {isDirty && (
+          {isDirty && !isReadOnly && (
             <motion.div
               initial={{ opacity: 0, scale: 0.9 }}
               animate={{ opacity: 1, scale: 1 }}
               exit={{ opacity: 0, scale: 0.9 }}
               className="flex items-center gap-3"
             >
-              <span className="text-xs text-amber-400 font-medium">Unsaved changes</span>
-              <Button onClick={() => saveMutation.mutate()} loading={saveMutation.isPending} variant="primary">
+              <span className="text-xs text-amber-400 font-medium">
+                Unsaved changes
+              </span>
+              <Button
+                onClick={() => saveMutation.mutate()}
+                loading={saveMutation.isPending}
+                variant="primary"
+              >
                 Save Changes
               </Button>
             </motion.div>
@@ -132,12 +172,39 @@ export function AuthSettingsPage() {
       </div>
 
       <AnimatePresence>
-        {saveStatus && <div className="mb-6"><Alert type={saveStatus.type} message={saveStatus.text} /></div>}
+        {saveStatus && (
+          <div className="mb-6">
+            <Alert type={saveStatus.type} message={saveStatus.text} />
+          </div>
+        )}
+        {isReadOnly && (
+          <motion.div
+            initial={{ opacity: 0, y: -4 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0 }}
+            className="mb-6 flex items-center gap-2 px-4 py-3 bg-amber-500/10 border border-amber-500/20 rounded-lg"
+          >
+            <span className="text-amber-400 text-xs font-semibold">
+              View only —
+            </span>
+            <span className="text-amber-400/80 text-xs">
+              Your role (DOMAIN_ADMIN) does not have permission to modify
+              authentication settings.
+            </span>
+          </motion.div>
+        )}
       </AnimatePresence>
 
       {/* Auth Methods */}
-      <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.05 }}>
-        <Card title="Authentication Methods" subtitle="Enable or disable sign-in mechanisms for your tenant">
+      <motion.div
+        initial={{ opacity: 0, y: 12 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.05 }}
+      >
+        <Card
+          title="Authentication Methods"
+          subtitle="Enable or disable sign-in mechanisms for your tenant"
+        >
           <div className="space-y-6">
             {authMethods.map((method, i) => (
               <motion.div
@@ -149,17 +216,26 @@ export function AuthSettingsPage() {
                 <div className="flex items-start justify-between gap-4">
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2 mb-1">
-                      <span className="text-sm font-semibold text-text-primary">{method.label}</span>
-                      <Badge variant={method.badge as any}>{method.badgeText}</Badge>
+                      <span className="text-sm font-semibold text-text-primary">
+                        {method.label}
+                      </span>
+                      <Badge variant={method.badge as any}>
+                        {method.badgeText}
+                      </Badge>
                     </div>
-                    <p className="text-xs text-text-muted leading-relaxed">{method.description}</p>
+                    <p className="text-xs text-text-muted leading-relaxed">
+                      {method.description}
+                    </p>
                   </div>
                   <Toggle
                     checked={config[method.key]}
                     onChange={(v) => patchConfig({ [method.key]: v })}
+                    disabled={isReadOnly}
                   />
                 </div>
-                {i < authMethods.length - 1 && <div className="h-px bg-border mt-6" />}
+                {i < authMethods.length - 1 && (
+                  <div className="h-px bg-border mt-6" />
+                )}
               </motion.div>
             ))}
           </div>
@@ -167,20 +243,59 @@ export function AuthSettingsPage() {
       </motion.div>
 
       {/* Security summary */}
-      <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }} className="mt-6">
-        <Card title="Security Summary" subtitle="Overview of your current security posture">
+      <motion.div
+        initial={{ opacity: 0, y: 12 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.2 }}
+        className="mt-6"
+      >
+        <Card
+          title="Security Summary"
+          subtitle="Overview of your current security posture"
+        >
           <div className="grid grid-cols-2 gap-4">
             {[
-              { label: "MFA Status", value: config.mfaEnabled ? "Enforced" : "Not Enforced", ok: config.mfaEnabled },
-              { label: "Password Login", value: config.passwordEnabled ? "Enabled" : "Disabled", ok: config.passwordEnabled },
-              { label: "Max Login Attempts", value: `${config.maxLoginAttempts} attempts`, ok: true },
-              { label: "Session Timeout", value: `${config.sessionTimeoutMinutes} minutes`, ok: true },
-              { label: "Lockout Duration", value: `${config.lockoutDurationMinutes} min`, ok: true },
-              { label: "SSO", value: config.ssoEnabled ? "Active" : "Off", ok: null },
+              {
+                label: "MFA Status",
+                value: config.mfaEnabled ? "Enforced" : "Not Enforced",
+                ok: config.mfaEnabled,
+              },
+              {
+                label: "Password Login",
+                value: config.passwordEnabled ? "Enabled" : "Disabled",
+                ok: config.passwordEnabled,
+              },
+              {
+                label: "Max Login Attempts",
+                value: `${config.maxLoginAttempts} attempts`,
+                ok: true,
+              },
+              {
+                label: "Session Timeout",
+                value: `${config.sessionTimeoutMinutes} minutes`,
+                ok: true,
+              },
+              {
+                label: "Lockout Duration",
+                value: `${config.lockoutDurationMinutes} min`,
+                ok: true,
+              },
+              {
+                label: "SSO",
+                value: config.ssoEnabled ? "Active" : "Off",
+                ok: null,
+              },
             ].map((item) => (
-              <div key={item.label} className="flex flex-col gap-1 p-3 bg-surface-2 rounded-lg border border-border">
-                <span className="text-[10px] uppercase tracking-widest text-text-muted font-semibold">{item.label}</span>
-                <span className={`text-sm font-bold ${item.ok === true ? "text-emerald-400" : item.ok === false ? "text-red-400" : "text-text-primary"}`}>
+              <div
+                key={item.label}
+                className="flex flex-col gap-1 p-3 bg-surface-2 rounded-lg border border-border"
+              >
+                <span className="text-[10px] uppercase tracking-widest text-text-muted font-semibold">
+                  {item.label}
+                </span>
+                <span
+                  className={`text-sm font-bold ${item.ok === true ? "text-emerald-400" : item.ok === false ? "text-red-400" : "text-text-primary"}`}
+                >
                   {item.value}
                 </span>
               </div>
