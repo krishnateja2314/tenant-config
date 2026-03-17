@@ -2,29 +2,35 @@ import { motion, AnimatePresence } from "framer-motion";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { getAuthConfig, updateAuthConfig } from "../api/authConfig.api";
 import { useAuthStore } from "../store/auth.store";
-import { useAuthConfigStore, useIsReadOnly } from "../store/authConfig.store";
+import {
+  useAuthConfigStore,
+  useIsDirty,
+  useIsReadOnly,
+} from "../store/authConfig.store";
 import { Toggle, Button, Badge, Alert, Spinner, Card } from "../components/ui";
 import { useEffect, useState } from "react";
+
+const PAGE: "auth-settings" = "auth-settings";
 
 export function AuthSettingsPage() {
   const admin = useAuthStore((s) => s.admin);
   const tenantId = admin?.tenantId ?? "";
+  const isReadOnly = useIsReadOnly();
+  const isDirty = useIsDirty(PAGE);
 
-  const { setConfig, patchConfig, resetDirty, config, isDirty } =
-    useAuthConfigStore((s) => ({
+  const { setConfig, patchConfig, resetDirtyPage, config } = useAuthConfigStore(
+    (s) => ({
       setConfig: s.setConfig,
       patchConfig: s.patchConfig,
-      resetDirty: s.resetDirty,
+      resetDirtyPage: s.resetDirtyPage,
       config: s.config,
-      isDirty: s.isDirty,
-    }));
+    }),
+  );
 
   const [saveStatus, setSaveStatus] = useState<{
     type: "success" | "error";
     text: string;
   } | null>(null);
-  const isReadOnly = useIsReadOnly();
-
   const queryClient = useQueryClient();
 
   const {
@@ -40,8 +46,8 @@ export function AuthSettingsPage() {
   });
 
   useEffect(() => {
-    if (fetchedConfig) setConfig(fetchedConfig);
-  }, [fetchedConfig, setConfig]);
+    if (fetchedConfig && !config) setConfig(fetchedConfig);
+  }, [fetchedConfig, config, setConfig]);
 
   const saveMutation = useMutation({
     mutationFn: () => updateAuthConfig(tenantId, config!),
@@ -51,7 +57,7 @@ export function AuthSettingsPage() {
           type: "success",
           text: "Configuration saved successfully.",
         });
-        resetDirty();
+        resetDirtyPage(PAGE);
         queryClient.invalidateQueries({ queryKey: ["auth-config", tenantId] });
       } else {
         setSaveStatus({ type: "error", text: res.message });
@@ -133,7 +139,6 @@ export function AuthSettingsPage() {
 
   return (
     <div className="p-8 max-w-3xl">
-      {/* Header */}
       <div className="flex items-start justify-between mb-8">
         <motion.div
           initial={{ opacity: 0, y: -8 }}
@@ -147,7 +152,6 @@ export function AuthSettingsPage() {
             <span className="text-accent font-medium">{tenantId}</span>
           </p>
         </motion.div>
-
         <AnimatePresence>
           {isDirty && !isReadOnly && (
             <motion.div
@@ -188,14 +192,13 @@ export function AuthSettingsPage() {
               View only —
             </span>
             <span className="text-amber-400/80 text-xs">
-              Your role (DOMAIN_ADMIN) does not have permission to modify
-              authentication settings.
+              Your role does not have permission to modify authentication
+              settings.
             </span>
           </motion.div>
         )}
       </AnimatePresence>
 
-      {/* Auth Methods */}
       <motion.div
         initial={{ opacity: 0, y: 12 }}
         animate={{ opacity: 1, y: 0 }}
@@ -229,7 +232,7 @@ export function AuthSettingsPage() {
                   </div>
                   <Toggle
                     checked={config[method.key]}
-                    onChange={(v) => patchConfig({ [method.key]: v })}
+                    onChange={(v) => patchConfig({ [method.key]: v }, PAGE)}
                     disabled={isReadOnly}
                   />
                 </div>
@@ -242,7 +245,6 @@ export function AuthSettingsPage() {
         </Card>
       </motion.div>
 
-      {/* Security summary */}
       <motion.div
         initial={{ opacity: 0, y: 12 }}
         animate={{ opacity: 1, y: 0 }}

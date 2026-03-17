@@ -2,30 +2,118 @@ import { motion, AnimatePresence } from "framer-motion";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { getAuthConfig, updateAuthConfig } from "../api/authConfig.api";
 import { useAuthStore } from "../store/auth.store";
-import { useAuthConfigStore, useIsReadOnly } from "../store/authConfig.store";
-import { Toggle, Input, Button, Alert, Card, Spinner } from "../components/ui";
+import {
+  useAuthConfigStore,
+  useIsDirty,
+  useIsReadOnly,
+} from "../store/authConfig.store";
+import { Toggle, Button, Alert, Card, Spinner } from "../components/ui";
 import { useState, useEffect } from "react";
 
+const PAGE: "password-policy" = "password-policy";
+
+// ── NumericInput ──────────────────────────────────────────────────────────────
+function NumericInput({
+  label,
+  value,
+  min,
+  max,
+  hint,
+  disabled,
+  onChange,
+}: {
+  label: string;
+  value: number;
+  min: number;
+  max: number;
+  hint?: string;
+  disabled?: boolean;
+  onChange: (v: number) => void;
+}) {
+  const [raw, setRaw] = useState(String(value));
+  const [error, setError] = useState<string | undefined>();
+
+  useEffect(() => {
+    setRaw(String(value));
+    setError(undefined);
+  }, [value]);
+
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (disabled) return;
+    const str = e.target.value;
+    setRaw(str);
+    if (str === "" || str === "-") {
+      setError("Must be a number.");
+      return;
+    }
+    const parsed = parseInt(str, 10);
+    if (isNaN(parsed)) {
+      setError("Must be a number.");
+      return;
+    }
+    if (parsed < min || parsed > max) {
+      setError(`Must be between ${min} and ${max}.`);
+      return;
+    }
+    setError(undefined);
+    onChange(parsed);
+  };
+
+  return (
+    <div className="flex flex-col gap-1.5">
+      <label className="text-xs font-semibold uppercase tracking-widest text-text-muted">
+        {label}
+      </label>
+      <input
+        type="number"
+        value={raw}
+        min={min}
+        max={max}
+        disabled={disabled}
+        onChange={handleChange}
+        className={`w-full bg-surface-2 border rounded-lg px-4 py-3 text-sm text-text-primary
+          outline-none transition-all duration-200 focus:ring-2 focus:ring-accent/50 focus:border-accent
+          disabled:opacity-50 disabled:cursor-not-allowed
+          ${error ? "border-red-500 focus:ring-red-500/30" : "border-border"}`}
+      />
+      <AnimatePresence>
+        {error ? (
+          <motion.p
+            initial={{ opacity: 0, y: -4 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0 }}
+            className="text-xs text-red-400"
+          >
+            {error}
+          </motion.p>
+        ) : (
+          hint && <p className="text-xs text-text-muted">{hint}</p>
+        )}
+      </AnimatePresence>
+    </div>
+  );
+}
+
+// ── Page ──────────────────────────────────────────────────────────────────────
 export function PasswordPolicyPage() {
   const admin = useAuthStore((s) => s.admin);
   const tenantId = admin?.tenantId ?? "";
   const isReadOnly = useIsReadOnly();
+  const isDirty = useIsDirty(PAGE);
 
-  const { config, setConfig, patchConfig, resetDirty, isDirty } =
-    useAuthConfigStore((s) => ({
+  const { config, setConfig, patchConfig, resetDirtyPage } = useAuthConfigStore(
+    (s) => ({
       config: s.config,
       setConfig: s.setConfig,
       patchConfig: s.patchConfig,
-      resetDirty: s.resetDirty,
-      isDirty: s.isDirty,
-    }));
+      resetDirtyPage: s.resetDirtyPage,
+    }),
+  );
 
   const [saveStatus, setSaveStatus] = useState<{
     type: "success" | "error";
     text: string;
   } | null>(null);
-  const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
-
   const queryClient = useQueryClient();
 
   const { isLoading, data: fetchedConfig } = useQuery({
@@ -36,15 +124,15 @@ export function PasswordPolicyPage() {
   });
 
   useEffect(() => {
-    if (fetchedConfig) setConfig(fetchedConfig);
-  }, [fetchedConfig, setConfig]);
+    if (fetchedConfig && !config) setConfig(fetchedConfig);
+  }, [fetchedConfig, config, setConfig]);
 
   const saveMutation = useMutation({
     mutationFn: () => updateAuthConfig(tenantId, config!),
     onSuccess: (res) => {
       if (res.success) {
         setSaveStatus({ type: "success", text: "Password policy saved." });
-        resetDirty();
+        resetDirtyPage(PAGE);
         queryClient.invalidateQueries({ queryKey: ["auth-config", tenantId] });
       } else {
         setSaveStatus({ type: "error", text: res.message });
@@ -57,54 +145,14 @@ export function PasswordPolicyPage() {
     },
   });
 
-  const handleNumericField = (
-    key:
-      | "minLength"
-      | "expiryDays"
-      | "sessionTimeoutMinutes"
-      | "maxLoginAttempts"
-      | "lockoutDurationMinutes",
-    value: string,
-    min: number,
-    max: number,
-  ) => {
-    if (isReadOnly) return;
-    const parsed = parseInt(value, 10);
-    if (isNaN(parsed)) {
-      setFieldErrors((e) => ({ ...e, [key]: "Must be a number." }));
-      return;
-    }
-    if (parsed < min || parsed > max) {
-      setFieldErrors((e) => ({
-        ...e,
-        [key]: `Must be between ${min} and ${max}.`,
-      }));
-      return;
-    }
-    setFieldErrors((e) => ({ ...e, [key]: "" }));
-    if (
-      key === "sessionTimeoutMinutes" ||
-      key === "maxLoginAttempts" ||
-      key === "lockoutDurationMinutes"
-    ) {
-      patchConfig({ [key]: parsed });
-    } else {
-      patchConfig({
-        passwordPolicy: { ...config!.passwordPolicy, [key]: parsed },
-      });
-    }
-  };
-
-  if (isLoading || !config) {
+  if (isLoading || !config)
     return (
       <div className="flex items-center justify-center h-64">
         <Spinner size="lg" />
       </div>
     );
-  }
 
   const { passwordPolicy } = config;
-
   const passwordToggles = [
     {
       key: "requireUppercase" as const,
@@ -137,7 +185,6 @@ export function PasswordPolicyPage() {
             Define strength and expiry rules for tenant passwords
           </p>
         </motion.div>
-
         <AnimatePresence>
           {isDirty && !isReadOnly && (
             <motion.div
@@ -184,7 +231,6 @@ export function PasswordPolicyPage() {
       </AnimatePresence>
 
       <div className="space-y-6">
-        {/* Complexity */}
         <motion.div
           initial={{ opacity: 0, y: 12 }}
           animate={{ opacity: 1, y: 0 }}
@@ -195,18 +241,19 @@ export function PasswordPolicyPage() {
             subtitle="Minimum requirements for user passwords"
           >
             <div className="space-y-4 mb-6">
-              <Input
+              <NumericInput
                 label="Minimum Length"
-                type="number"
                 value={passwordPolicy.minLength}
-                onChange={(e) =>
-                  handleNumericField("minLength", e.target.value, 4, 64)
-                }
-                error={fieldErrors.minLength}
-                hint="Recommended: 8 or more characters"
                 min={4}
                 max={64}
+                hint="Recommended: 8 or more characters"
                 disabled={isReadOnly}
+                onChange={(v) =>
+                  patchConfig(
+                    { passwordPolicy: { ...passwordPolicy, minLength: v } },
+                    PAGE,
+                  )
+                }
               />
             </div>
             <div className="space-y-4">
@@ -215,9 +262,12 @@ export function PasswordPolicyPage() {
                   key={toggle.key}
                   checked={passwordPolicy[toggle.key]}
                   onChange={(v) =>
-                    patchConfig({
-                      passwordPolicy: { ...passwordPolicy, [toggle.key]: v },
-                    })
+                    patchConfig(
+                      {
+                        passwordPolicy: { ...passwordPolicy, [toggle.key]: v },
+                      },
+                      PAGE,
+                    )
                   }
                   label={toggle.label}
                   description={toggle.description}
@@ -228,7 +278,6 @@ export function PasswordPolicyPage() {
           </Card>
         </motion.div>
 
-        {/* Expiry */}
         <motion.div
           initial={{ opacity: 0, y: 12 }}
           animate={{ opacity: 1, y: 0 }}
@@ -238,23 +287,23 @@ export function PasswordPolicyPage() {
             title="Password Expiry"
             subtitle="Force periodic password resets"
           >
-            <Input
+            <NumericInput
               label="Expiry (days)"
-              type="number"
               value={passwordPolicy.expiryDays}
-              onChange={(e) =>
-                handleNumericField("expiryDays", e.target.value, 0, 365)
-              }
-              error={fieldErrors.expiryDays}
-              hint="Set to 0 to disable expiry"
               min={0}
               max={365}
+              hint="Set to 0 to disable expiry"
               disabled={isReadOnly}
+              onChange={(v) =>
+                patchConfig(
+                  { passwordPolicy: { ...passwordPolicy, expiryDays: v } },
+                  PAGE,
+                )
+              }
             />
           </Card>
         </motion.div>
 
-        {/* Session & Lockout */}
         <motion.div
           initial={{ opacity: 0, y: 12 }}
           animate={{ opacity: 1, y: 0 }}
@@ -265,54 +314,36 @@ export function PasswordPolicyPage() {
             subtitle="Control session lifetime and brute-force protection"
           >
             <div className="space-y-4">
-              <Input
+              <NumericInput
                 label="Session Timeout (minutes)"
-                type="number"
                 value={config.sessionTimeoutMinutes}
-                onChange={(e) =>
-                  handleNumericField(
-                    "sessionTimeoutMinutes",
-                    e.target.value,
-                    5,
-                    1440,
-                  )
-                }
-                error={fieldErrors.sessionTimeoutMinutes}
-                hint="Admin sessions expire after this duration of inactivity"
                 min={5}
                 max={1440}
+                hint="Admin sessions expire after this duration of inactivity"
                 disabled={isReadOnly}
-              />
-              <Input
-                label="Max Login Attempts"
-                type="number"
-                value={config.maxLoginAttempts}
-                onChange={(e) =>
-                  handleNumericField("maxLoginAttempts", e.target.value, 1, 20)
+                onChange={(v) =>
+                  patchConfig({ sessionTimeoutMinutes: v }, PAGE)
                 }
-                error={fieldErrors.maxLoginAttempts}
-                hint="Account is locked after this many consecutive failures"
+              />
+              <NumericInput
+                label="Max Login Attempts"
+                value={config.maxLoginAttempts}
                 min={1}
                 max={20}
+                hint="Account is locked after this many consecutive failures"
                 disabled={isReadOnly}
+                onChange={(v) => patchConfig({ maxLoginAttempts: v }, PAGE)}
               />
-              <Input
+              <NumericInput
                 label="Lockout Duration (minutes)"
-                type="number"
                 value={config.lockoutDurationMinutes}
-                onChange={(e) =>
-                  handleNumericField(
-                    "lockoutDurationMinutes",
-                    e.target.value,
-                    1,
-                    1440,
-                  )
-                }
-                error={fieldErrors.lockoutDurationMinutes}
-                hint="How long the account stays locked after max attempts reached"
                 min={1}
                 max={1440}
+                hint="How long the account stays locked after max attempts reached"
                 disabled={isReadOnly}
+                onChange={(v) =>
+                  patchConfig({ lockoutDurationMinutes: v }, PAGE)
+                }
               />
             </div>
           </Card>

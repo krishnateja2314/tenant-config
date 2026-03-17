@@ -2,10 +2,15 @@ import { motion, AnimatePresence } from "framer-motion";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { getAuthConfig, updateAuthConfig } from "../api/authConfig.api";
 import { useAuthStore } from "../store/auth.store";
-import { useAuthConfigStore, useIsReadOnly } from "../store/authConfig.store";
+import {
+  useAuthConfigStore,
+  useIsDirty,
+  useIsReadOnly,
+} from "../store/authConfig.store";
 import { Toggle, Button, Alert, Card, Spinner, Badge } from "../components/ui";
 import { useState, useEffect } from "react";
 
+const PAGE: "sso-otp" = "sso-otp";
 const AVAILABLE_ROLES = [
   "TENANT_ADMIN",
   "DOMAIN_ADMIN",
@@ -18,15 +23,16 @@ export function SSOOTPPage() {
   const admin = useAuthStore((s) => s.admin);
   const tenantId = admin?.tenantId ?? "";
   const isReadOnly = useIsReadOnly();
+  const isDirty = useIsDirty(PAGE);
 
-  const { config, setConfig, patchConfig, resetDirty, isDirty } =
-    useAuthConfigStore((s) => ({
+  const { config, setConfig, patchConfig, resetDirtyPage } = useAuthConfigStore(
+    (s) => ({
       config: s.config,
       setConfig: s.setConfig,
       patchConfig: s.patchConfig,
-      resetDirty: s.resetDirty,
-      isDirty: s.isDirty,
-    }));
+      resetDirtyPage: s.resetDirtyPage,
+    }),
+  );
 
   const [saveStatus, setSaveStatus] = useState<{
     type: "success" | "error";
@@ -42,8 +48,8 @@ export function SSOOTPPage() {
   });
 
   useEffect(() => {
-    if (fetchedConfig) setConfig(fetchedConfig);
-  }, [fetchedConfig, setConfig]);
+    if (fetchedConfig && !config) setConfig(fetchedConfig);
+  }, [fetchedConfig, config, setConfig]);
 
   const saveMutation = useMutation({
     mutationFn: () => updateAuthConfig(tenantId, config!),
@@ -53,7 +59,7 @@ export function SSOOTPPage() {
         text: res.message,
       });
       if (res.success) {
-        resetDirty();
+        resetDirtyPage(PAGE);
         queryClient.invalidateQueries({ queryKey: ["auth-config", tenantId] });
       }
       setTimeout(() => setSaveStatus(null), 3000);
@@ -70,20 +76,18 @@ export function SSOOTPPage() {
     const updated = current.includes(role)
       ? current.filter((r) => r !== role)
       : [...current, role];
-    patchConfig({ allowedRoles: updated });
+    patchConfig({ allowedRoles: updated }, PAGE);
   };
 
-  if (isLoading || !config) {
+  if (isLoading || !config)
     return (
       <div className="flex items-center justify-center h-64">
         <Spinner size="lg" />
       </div>
     );
-  }
 
   return (
     <div className="p-8 max-w-3xl">
-      {/* Header */}
       <div className="flex items-start justify-between mb-8">
         <motion.div
           initial={{ opacity: 0, y: -8 }}
@@ -142,7 +146,6 @@ export function SSOOTPPage() {
       </AnimatePresence>
 
       <div className="space-y-6">
-        {/* SSO */}
         <motion.div
           initial={{ opacity: 0, y: 12 }}
           animate={{ opacity: 1, y: 0 }}
@@ -155,12 +158,11 @@ export function SSOOTPPage() {
             <div className="space-y-6">
               <Toggle
                 checked={config.ssoEnabled}
-                onChange={(v) => patchConfig({ ssoEnabled: v })}
+                onChange={(v) => patchConfig({ ssoEnabled: v }, PAGE)}
                 label="Enable SSO"
                 description="Enable SAML 2.0 / OAuth 2.0 federation. When active, users can sign in through your IdP."
                 disabled={isReadOnly}
               />
-
               <AnimatePresence>
                 {config.ssoEnabled && (
                   <motion.div
@@ -175,7 +177,6 @@ export function SSOOTPPage() {
                       </p>
                       <p className="text-xs text-text-muted mb-4">
                         Only selected roles will be directed to the SSO flow.
-                        Others will use password login.
                       </p>
                       <div className="flex flex-wrap gap-2">
                         {AVAILABLE_ROLES.map((role) => {
@@ -187,11 +188,7 @@ export function SSOOTPPage() {
                               disabled={isReadOnly}
                               className={`px-3 py-1.5 rounded-full text-xs font-semibold border transition-all duration-150
                                 ${isReadOnly ? "cursor-not-allowed opacity-60" : ""}
-                                ${
-                                  selected
-                                    ? "bg-accent/10 border-accent/40 text-accent"
-                                    : "bg-surface-2 border-border text-text-muted hover:border-accent/30 hover:text-text-primary"
-                                }`}
+                                ${selected ? "bg-accent/10 border-accent/40 text-accent" : "bg-surface-2 border-border text-text-muted hover:border-accent/30 hover:text-text-primary"}`}
                             >
                               {role}
                             </button>
@@ -211,7 +208,6 @@ export function SSOOTPPage() {
           </Card>
         </motion.div>
 
-        {/* OTP */}
         <motion.div
           initial={{ opacity: 0, y: 12 }}
           animate={{ opacity: 1, y: 0 }}
@@ -224,7 +220,7 @@ export function SSOOTPPage() {
             <div className="space-y-4">
               <Toggle
                 checked={config.otpEnabled}
-                onChange={(v) => patchConfig({ otpEnabled: v })}
+                onChange={(v) => patchConfig({ otpEnabled: v }, PAGE)}
                 label="Enable OTP Login"
                 description="Users receive a time-limited OTP via email. Can be used standalone or as part of MFA."
                 disabled={isReadOnly}
@@ -245,7 +241,6 @@ export function SSOOTPPage() {
           </Card>
         </motion.div>
 
-        {/* Info */}
         <motion.div
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}

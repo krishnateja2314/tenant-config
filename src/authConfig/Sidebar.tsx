@@ -3,15 +3,53 @@ import { useRouterState } from "@tanstack/react-router";
 import { useMutation } from "@tanstack/react-query";
 import { logoutAdmin } from "../api/auth.api";
 import { useAuthStore } from "../store/auth.store";
-import { useAuthConfigStore } from "../store/authConfig.store";
+import { useAuthConfigStore, useAnyDirty, useIsDirty, type PageKey } from "../store/authConfig.store";
 import { router } from "../router";
 
-const NAV_ITEMS = [
-  { label: "Auth Settings", path: "/auth-config", icon: "⚙" },
-  { label: "Password Policy", path: "/auth-config/password-policy", icon: "🔑" },
-  { label: "SSO & OTP", path: "/auth-config/sso-otp", icon: "🔗" },
-  { label: "Session Rules", path: "/auth-config/session", icon: "⏱" },
+const NAV_ITEMS: { label: string; path: string; icon: string; pageKey: PageKey }[] = [
+  { label: "Auth Settings",  path: "/auth-config",                 icon: "⚙", pageKey: "auth-settings"  },
+  { label: "Password Policy",path: "/auth-config/password-policy", icon: "🔑", pageKey: "password-policy" },
+  { label: "SSO & OTP",      path: "/auth-config/sso-otp",         icon: "🔗", pageKey: "sso-otp"         },
+  { label: "Session Rules",  path: "/auth-config/session",         icon: "⏱", pageKey: "session"         },
 ];
+
+function NavItem({
+  item,
+  isActive,
+}: {
+  item: typeof NAV_ITEMS[number];
+  isActive: boolean;
+}) {
+  // Each nav item subscribes only to its own page's dirty state
+  const isDirty = useIsDirty(item.pageKey);
+
+  return (
+    <button
+      onClick={() => router.navigate({ to: item.path })}
+      className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all duration-150 text-left relative ${
+        isActive
+          ? "bg-accent/10 text-accent"
+          : "text-text-muted hover:text-text-primary hover:bg-surface-2"
+      }`}
+    >
+      {isActive && (
+        <motion.div
+          layoutId="sidebar-active"
+          className="absolute inset-0 bg-accent/10 rounded-lg"
+          transition={{ type: "spring", stiffness: 400, damping: 35 }}
+        />
+      )}
+      <span className="relative z-10 text-base">{item.icon}</span>
+      <span className="relative z-10 flex-1">{item.label}</span>
+      {isDirty && (
+        <span
+          className="relative z-10 w-1.5 h-1.5 rounded-full bg-amber-400 flex-shrink-0"
+          title="Unsaved changes"
+        />
+      )}
+    </button>
+  );
+}
 
 export function Sidebar() {
   const routerState = useRouterState();
@@ -20,7 +58,7 @@ export function Sidebar() {
   const admin = useAuthStore((s) => s.admin);
   const clearAuth = useAuthStore((s) => s.clearAuth);
   const clearConfig = useAuthConfigStore((s) => s.clearConfig);
-  const isDirty = useAuthConfigStore((s) => s.isDirty);
+  const anyDirty = useAnyDirty();
 
   const logoutMutation = useMutation({
     mutationFn: logoutAdmin,
@@ -54,36 +92,28 @@ export function Sidebar() {
         </div>
       )}
 
+      {/* Global unsaved changes banner */}
+      {anyDirty && (
+        <motion.div
+          initial={{ opacity: 0, y: -4 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="mx-4 mt-3 px-3 py-2 bg-amber-500/10 border border-amber-500/20 rounded-lg flex items-center gap-2"
+        >
+          <span className="w-1.5 h-1.5 rounded-full bg-amber-400 flex-shrink-0 animate-pulse" />
+          <p className="text-[10px] font-semibold text-amber-400">Unsaved changes</p>
+        </motion.div>
+      )}
+
       {/* Nav */}
       <nav className="flex-1 p-4 space-y-1 overflow-y-auto mt-2">
         <p className="text-[10px] font-semibold uppercase tracking-widest text-text-muted/60 px-3 mb-3">
           Configuration
         </p>
         {NAV_ITEMS.map((item) => {
-          const isActive = currentPath === item.path || currentPath.startsWith(item.path + "/");
+          const isActive =
+            currentPath === item.path || currentPath.startsWith(item.path + "/");
           return (
-            <button
-              key={item.path}
-              onClick={() => router.navigate({ to: item.path })}
-              className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all duration-150 text-left relative ${
-                isActive
-                  ? "bg-accent/10 text-accent"
-                  : "text-text-muted hover:text-text-primary hover:bg-surface-2"
-              }`}
-            >
-              {isActive && (
-                <motion.div
-                  layoutId="sidebar-active"
-                  className="absolute inset-0 bg-accent/10 rounded-lg"
-                  transition={{ type: "spring", stiffness: 400, damping: 35 }}
-                />
-              )}
-              <span className="relative z-10 text-base">{item.icon}</span>
-              <span className="relative z-10">{item.label}</span>
-              {isActive && isDirty && (
-                <span className="relative z-10 ml-auto w-1.5 h-1.5 rounded-full bg-amber-400" title="Unsaved changes" />
-              )}
-            </button>
+            <NavItem key={item.path} item={item} isActive={isActive} />
           );
         })}
       </nav>
