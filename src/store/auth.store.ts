@@ -12,6 +12,8 @@ export interface Admin {
 interface AuthState {
   admin: Admin | null;
   isAuthenticated: boolean;
+  sessionVerified: boolean; // true once the boot-time /me check has completed
+
   // Mid-login state (between password step and MFA step)
   mfaPending: boolean;
   mfaSessionToken: string | null;
@@ -20,52 +22,57 @@ interface AuthState {
   // Actions
   setMFAPending: (sessionToken: string, email: string) => void;
   setAdmin: (admin: Admin) => void;
+  setSessionVerified: (verified: boolean) => void;
   clearAuth: () => void;
 }
 
-/**
- * Auth store — persisted to sessionStorage (clears on tab close).
- * Never store JWTs here; the HttpOnly cookie handles that.
- * We only persist non-sensitive UI state (admin profile, tenant info).
- */
 export const useAuthStore = create<AuthState>()(
   persist(
     (set) => ({
       admin: null,
       isAuthenticated: false,
+      sessionVerified: false,
       mfaPending: false,
       mfaSessionToken: null,
       pendingEmail: null,
 
       setMFAPending: (sessionToken, email) =>
-        set({ mfaPending: true, mfaSessionToken: sessionToken, pendingEmail: email }),
+        set({
+          mfaPending: true,
+          mfaSessionToken: sessionToken,
+          pendingEmail: email,
+        }),
 
       setAdmin: (admin) =>
         set({
           admin,
           isAuthenticated: true,
+          sessionVerified: true,
           mfaPending: false,
           mfaSessionToken: null,
           pendingEmail: null,
         }),
 
+      setSessionVerified: (verified) => set({ sessionVerified: verified }),
+
       clearAuth: () =>
         set({
           admin: null,
           isAuthenticated: false,
+          sessionVerified: true, // verified = true even on clear (check done, result: invalid)
           mfaPending: false,
           mfaSessionToken: null,
           pendingEmail: null,
         }),
     }),
     {
-      name: "tc-auth", // sessionStorage key
-      storage: createJSONStorage(() => sessionStorage), // clears on tab close
+      name: "tc-auth",
+      storage: createJSONStorage(() => sessionStorage),
+      // Only persist admin profile and auth flag — never tokens
       partialize: (state) => ({
-        // Only persist what's needed across page refreshes in the same session
         admin: state.admin,
         isAuthenticated: state.isAuthenticated,
       }),
-    }
-  )
+    },
+  ),
 );

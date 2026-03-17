@@ -12,7 +12,7 @@ export interface AdminLoginPayload {
 export interface MFAVerifyPayload {
   email: string;
   otp: string;
-  sessionToken: string; // temporary token issued after step-1 login
+  sessionToken: string;
 }
 
 export interface AdminSignupPayload {
@@ -27,7 +27,7 @@ export interface AuthResponse {
   message: string;
   data?: {
     requiresMFA?: boolean;
-    sessionToken?: string; // used between login step-1 and MFA step
+    sessionToken?: string;
     admin?: {
       id: string;
       name: string;
@@ -39,13 +39,12 @@ export interface AuthResponse {
 }
 
 // ── Step 1: Password login ────────────────────────────────────────────────────
-export async function loginAdmin(payload: AdminLoginPayload): Promise<AuthResponse> {
+export async function loginAdmin(
+  payload: AdminLoginPayload,
+): Promise<AuthResponse> {
   // TODO: POST /api/admin/login
-  // On success backend sets HttpOnly JWT cookie and returns { requiresMFA: true, sessionToken }
   console.log("[API placeholder] loginAdmin", payload);
   await delay(800);
-
-  // Simulate MFA required after first-factor success
   if (payload.email && payload.password) {
     return {
       success: true,
@@ -57,12 +56,12 @@ export async function loginAdmin(payload: AdminLoginPayload): Promise<AuthRespon
 }
 
 // ── Step 2: MFA / OTP verification ───────────────────────────────────────────
-export async function verifyMFA(payload: MFAVerifyPayload): Promise<AuthResponse> {
+export async function verifyMFA(
+  payload: MFAVerifyPayload,
+): Promise<AuthResponse> {
   // TODO: POST /api/admin/verify-mfa
-  // Backend validates OTP, sets final HttpOnly JWT cookie, returns admin profile
   console.log("[API placeholder] verifyMFA", payload);
   await delay(800);
-
   if (payload.otp === "123456") {
     return {
       success: true,
@@ -82,19 +81,18 @@ export async function verifyMFA(payload: MFAVerifyPayload): Promise<AuthResponse
 }
 
 // ── Signup ────────────────────────────────────────────────────────────────────
-export async function signupAdmin(payload: AdminSignupPayload): Promise<AuthResponse> {
+export async function signupAdmin(
+  payload: AdminSignupPayload,
+): Promise<AuthResponse> {
   // TODO: POST /api/admin/signup
   console.log("[API placeholder] signupAdmin", payload);
   await delay(900);
-  return {
-    success: true,
-    message: "Admin account created. Please log in.",
-  };
+  return { success: true, message: "Admin account created. Please log in." };
 }
 
 // ── Logout ────────────────────────────────────────────────────────────────────
 export async function logoutAdmin(): Promise<AuthResponse> {
-  // TODO: POST /api/admin/logout  — clears HttpOnly cookie server-side
+  // TODO: POST /api/admin/logout
   console.log("[API placeholder] logoutAdmin");
   await delay(400);
   return { success: true, message: "Logged out." };
@@ -106,6 +104,30 @@ export async function resendOTP(sessionToken: string): Promise<AuthResponse> {
   console.log("[API placeholder] resendOTP", sessionToken);
   await delay(600);
   return { success: true, message: "OTP resent to registered email." };
+}
+
+// ── Verify existing session on app boot ──────────────────────────────────────
+export async function verifySession(): Promise<AuthResponse> {
+  // TODO: GET /api/admin/me
+  // Browser sends the HttpOnly JWT cookie automatically.
+  // Backend verifies signature + expiry, returns admin profile or 401.
+  // Replace mock with: fetch("/api/admin/me", { credentials: "include" })
+  console.log("[API placeholder] verifySession");
+  await delay(400);
+  // Set success: false to simulate an expired session
+  return {
+    success: true,
+    message: "Session valid.",
+    data: {
+      admin: {
+        id: "admin-001",
+        name: "Krishna Teja",
+        email: "admin@tenant.com",
+        tenantId: "tenant-abc",
+        role: "TENANT_ADMIN",
+      },
+    },
+  };
 }
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
