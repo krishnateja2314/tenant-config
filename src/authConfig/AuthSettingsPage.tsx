@@ -1,14 +1,23 @@
 import { motion, AnimatePresence } from "framer-motion";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { getAuthConfig, updateAuthConfig } from "../api/authConfig.api";
+import { useQuery } from "@tanstack/react-query";
+import { getAuthConfig } from "../api/authConfig.api";
 import { useAuthStore } from "../store/auth.store";
 import {
   useAuthConfigStore,
   useIsDirty,
   useIsReadOnly,
 } from "../store/authConfig.store";
-import { Toggle, Button, Badge, Alert, Spinner, Card } from "../components/ui";
-import { useEffect, useState } from "react";
+import {
+  Toggle,
+  Button,
+  Badge,
+  Alert,
+  Spinner,
+  Card,
+  SaveStatusAlert,
+} from "../components/ui";
+import { useEffect } from "react";
+import { useSaveConfig } from "./useSaveConfig";
 
 const PAGE: "auth-settings" = "auth-settings";
 
@@ -18,20 +27,16 @@ export function AuthSettingsPage() {
   const isReadOnly = useIsReadOnly();
   const isDirty = useIsDirty(PAGE);
 
-  const { setConfig, patchConfig, resetDirtyPage, config } = useAuthConfigStore(
+  const { setConfig, patchConfig, resetAllDirty, config } = useAuthConfigStore(
     (s) => ({
       setConfig: s.setConfig,
       patchConfig: s.patchConfig,
-      resetDirtyPage: s.resetDirtyPage,
+      resetAllDirty: s.resetAllDirty,
       config: s.config,
     }),
   );
 
-  const [saveStatus, setSaveStatus] = useState<{
-    type: "success" | "error";
-    text: string;
-  } | null>(null);
-  const queryClient = useQueryClient();
+  const { save, isPending, saveStatus } = useSaveConfig();
 
   const {
     isLoading,
@@ -49,59 +54,27 @@ export function AuthSettingsPage() {
     if (fetchedConfig && !config) setConfig(fetchedConfig);
   }, [fetchedConfig, config, setConfig]);
 
-  const saveMutation = useMutation({
-    mutationFn: () => updateAuthConfig(tenantId, config!),
-    onSuccess: (res) => {
-      if (res.success) {
-        setSaveStatus({
-          type: "success",
-          text: "Configuration saved successfully.",
-        });
-        resetDirtyPage(PAGE);
-        queryClient.invalidateQueries({ queryKey: ["auth-config", tenantId] });
-      } else {
-        setSaveStatus({ type: "error", text: res.message });
-      }
-      setTimeout(() => setSaveStatus(null), 3000);
-    },
-    onError: () => {
-      setSaveStatus({
-        type: "error",
-        text: "Failed to save. Please try again.",
-      });
-      setTimeout(() => setSaveStatus(null), 3000);
-    },
-  });
-
-  if (isLoading) {
+  if (isLoading)
     return (
       <div className="flex items-center justify-center h-64">
         <Spinner size="lg" />
       </div>
     );
-  }
-
-  if (isError) {
+  if (isError)
     return (
       <div className="p-8">
         <Alert
           type="error"
-          message={
-            (error as Error)?.message ??
-            "Failed to load authentication configuration."
-          }
+          message={(error as Error)?.message ?? "Failed to load configuration."}
         />
       </div>
     );
-  }
-
-  if (!config) {
+  if (!config)
     return (
       <div className="flex items-center justify-center h-64">
         <Spinner size="lg" />
       </div>
     );
-  }
 
   const authMethods = [
     {
@@ -163,11 +136,7 @@ export function AuthSettingsPage() {
               <span className="text-xs text-amber-400 font-medium">
                 Unsaved changes
               </span>
-              <Button
-                onClick={() => saveMutation.mutate()}
-                loading={saveMutation.isPending}
-                variant="primary"
-              >
+              <Button onClick={save} loading={isPending} variant="primary">
                 Save Changes
               </Button>
             </motion.div>
@@ -178,7 +147,7 @@ export function AuthSettingsPage() {
       <AnimatePresence>
         {saveStatus && (
           <div className="mb-6">
-            <Alert type={saveStatus.type} message={saveStatus.text} />
+            <SaveStatusAlert status={saveStatus} />
           </div>
         )}
         {isReadOnly && (

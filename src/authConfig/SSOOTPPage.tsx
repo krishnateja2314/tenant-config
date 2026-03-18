@@ -1,14 +1,23 @@
 import { motion, AnimatePresence } from "framer-motion";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { getAuthConfig, updateAuthConfig } from "../api/authConfig.api";
+import { useQuery } from "@tanstack/react-query";
+import { getAuthConfig } from "../api/authConfig.api";
 import { useAuthStore } from "../store/auth.store";
 import {
   useAuthConfigStore,
   useIsDirty,
   useIsReadOnly,
 } from "../store/authConfig.store";
-import { Toggle, Button, Alert, Card, Spinner, Badge } from "../components/ui";
-import { useState, useEffect } from "react";
+import {
+  Toggle,
+  Button,
+  Alert,
+  Card,
+  Spinner,
+  Badge,
+  SaveStatusAlert,
+} from "../components/ui";
+import { useEffect } from "react";
+import { useSaveConfig } from "./useSaveConfig";
 
 const PAGE: "sso-otp" = "sso-otp";
 const AVAILABLE_ROLES = [
@@ -25,20 +34,13 @@ export function SSOOTPPage() {
   const isReadOnly = useIsReadOnly();
   const isDirty = useIsDirty(PAGE);
 
-  const { config, setConfig, patchConfig, resetDirtyPage } = useAuthConfigStore(
-    (s) => ({
-      config: s.config,
-      setConfig: s.setConfig,
-      patchConfig: s.patchConfig,
-      resetDirtyPage: s.resetDirtyPage,
-    }),
-  );
+  const { config, setConfig, patchConfig } = useAuthConfigStore((s) => ({
+    config: s.config,
+    setConfig: s.setConfig,
+    patchConfig: s.patchConfig,
+  }));
 
-  const [saveStatus, setSaveStatus] = useState<{
-    type: "success" | "error";
-    text: string;
-  } | null>(null);
-  const queryClient = useQueryClient();
+  const { save, isPending, saveStatus } = useSaveConfig();
 
   const { isLoading, data: fetchedConfig } = useQuery({
     queryKey: ["auth-config", tenantId],
@@ -50,25 +52,6 @@ export function SSOOTPPage() {
   useEffect(() => {
     if (fetchedConfig && !config) setConfig(fetchedConfig);
   }, [fetchedConfig, config, setConfig]);
-
-  const saveMutation = useMutation({
-    mutationFn: () => updateAuthConfig(tenantId, config!),
-    onSuccess: (res) => {
-      setSaveStatus({
-        type: res.success ? "success" : "error",
-        text: res.message,
-      });
-      if (res.success) {
-        resetDirtyPage(PAGE);
-        queryClient.invalidateQueries({ queryKey: ["auth-config", tenantId] });
-      }
-      setTimeout(() => setSaveStatus(null), 3000);
-    },
-    onError: () => {
-      setSaveStatus({ type: "error", text: "Save failed." });
-      setTimeout(() => setSaveStatus(null), 3000);
-    },
-  });
 
   const toggleRole = (role: string) => {
     if (!config || isReadOnly) return;
@@ -111,10 +94,7 @@ export function SSOOTPPage() {
               <span className="text-xs text-amber-400 font-medium">
                 Unsaved changes
               </span>
-              <Button
-                onClick={() => saveMutation.mutate()}
-                loading={saveMutation.isPending}
-              >
+              <Button onClick={save} loading={isPending}>
                 Save Changes
               </Button>
             </motion.div>
@@ -125,7 +105,7 @@ export function SSOOTPPage() {
       <AnimatePresence>
         {saveStatus && (
           <div className="mb-6">
-            <Alert type={saveStatus.type} message={saveStatus.text} />
+            <SaveStatusAlert status={saveStatus} />
           </div>
         )}
         {isReadOnly && (

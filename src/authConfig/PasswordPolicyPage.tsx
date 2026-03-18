@@ -1,18 +1,25 @@
 import { motion, AnimatePresence } from "framer-motion";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { getAuthConfig, updateAuthConfig } from "../api/authConfig.api";
+import { useQuery } from "@tanstack/react-query";
+import { getAuthConfig } from "../api/authConfig.api";
 import { useAuthStore } from "../store/auth.store";
 import {
   useAuthConfigStore,
   useIsDirty,
   useIsReadOnly,
 } from "../store/authConfig.store";
-import { Toggle, Button, Alert, Card, Spinner } from "../components/ui";
+import {
+  Toggle,
+  Button,
+  Alert,
+  Card,
+  Spinner,
+  SaveStatusAlert,
+} from "../components/ui";
 import { useState, useEffect } from "react";
+import { useSaveConfig } from "./useSaveConfig";
 
 const PAGE: "password-policy" = "password-policy";
 
-// ── NumericInput ──────────────────────────────────────────────────────────────
 function NumericInput({
   label,
   value,
@@ -94,27 +101,19 @@ function NumericInput({
   );
 }
 
-// ── Page ──────────────────────────────────────────────────────────────────────
 export function PasswordPolicyPage() {
   const admin = useAuthStore((s) => s.admin);
   const tenantId = admin?.tenantId ?? "";
   const isReadOnly = useIsReadOnly();
   const isDirty = useIsDirty(PAGE);
 
-  const { config, setConfig, patchConfig, resetDirtyPage } = useAuthConfigStore(
-    (s) => ({
-      config: s.config,
-      setConfig: s.setConfig,
-      patchConfig: s.patchConfig,
-      resetDirtyPage: s.resetDirtyPage,
-    }),
-  );
+  const { config, setConfig, patchConfig } = useAuthConfigStore((s) => ({
+    config: s.config,
+    setConfig: s.setConfig,
+    patchConfig: s.patchConfig,
+  }));
 
-  const [saveStatus, setSaveStatus] = useState<{
-    type: "success" | "error";
-    text: string;
-  } | null>(null);
-  const queryClient = useQueryClient();
+  const { save, isPending, saveStatus } = useSaveConfig();
 
   const { isLoading, data: fetchedConfig } = useQuery({
     queryKey: ["auth-config", tenantId],
@@ -126,24 +125,6 @@ export function PasswordPolicyPage() {
   useEffect(() => {
     if (fetchedConfig && !config) setConfig(fetchedConfig);
   }, [fetchedConfig, config, setConfig]);
-
-  const saveMutation = useMutation({
-    mutationFn: () => updateAuthConfig(tenantId, config!),
-    onSuccess: (res) => {
-      if (res.success) {
-        setSaveStatus({ type: "success", text: "Password policy saved." });
-        resetDirtyPage(PAGE);
-        queryClient.invalidateQueries({ queryKey: ["auth-config", tenantId] });
-      } else {
-        setSaveStatus({ type: "error", text: res.message });
-      }
-      setTimeout(() => setSaveStatus(null), 3000);
-    },
-    onError: () => {
-      setSaveStatus({ type: "error", text: "Save failed. Please try again." });
-      setTimeout(() => setSaveStatus(null), 3000);
-    },
-  });
 
   if (isLoading || !config)
     return (
@@ -196,10 +177,7 @@ export function PasswordPolicyPage() {
               <span className="text-xs text-amber-400 font-medium">
                 Unsaved changes
               </span>
-              <Button
-                onClick={() => saveMutation.mutate()}
-                loading={saveMutation.isPending}
-              >
+              <Button onClick={save} loading={isPending}>
                 Save Changes
               </Button>
             </motion.div>
@@ -210,7 +188,7 @@ export function PasswordPolicyPage() {
       <AnimatePresence>
         {saveStatus && (
           <div className="mb-6">
-            <Alert type={saveStatus.type} message={saveStatus.text} />
+            <SaveStatusAlert status={saveStatus} />
           </div>
         )}
         {isReadOnly && (
