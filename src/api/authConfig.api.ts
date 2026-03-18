@@ -1,9 +1,3 @@
-/**
- * Auth Configuration API Placeholders
- * Replace these with real fetch/axios calls to your Express backend.
- * JWT is sent automatically via the HttpOnly cookie set at login.
- */
-
 export interface PasswordPolicy {
   minLength: number;
   requireUppercase: boolean;
@@ -31,69 +25,74 @@ export interface ApiResponse<T = unknown> {
   data?: T;
 }
 
-// ── GET auth config ───────────────────────────────────────────────────────────
-export async function getAuthConfig(tenantId: string): Promise<ApiResponse<AuthConfigPayload>> {
-  // TODO: GET /api/auth-config/:tenantId
-  // Cookie-based JWT sent automatically by browser
-  console.log("[API placeholder] getAuthConfig", tenantId);
-  await delay(600);
+// Import the base URL from Vite environment variables
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "";
 
+// Helper for handling fetch errors consistently
+const handleNetworkError = <T>(error: unknown): ApiResponse<T> => {
+  console.error("[API Error]", error);
   return {
-    success: true,
-    message: "Auth config fetched.",
-    data: {
-      tenantId,
-      passwordEnabled: true,
-      ssoEnabled: false,
-      otpEnabled: true,
-      mfaEnabled: true,
-      passwordPolicy: {
-        minLength: 8,
-        requireUppercase: true,
-        requireNumbers: true,
-        requireSpecialChars: false,
-        expiryDays: 90,
-      },
-      allowedRoles: ["TENANT_ADMIN", "DOMAIN_ADMIN"],
-      sessionTimeoutMinutes: 60,
-      maxLoginAttempts: 5,
-      lockoutDurationMinutes: 15,
-    },
+    success: false,
+    message:
+      error instanceof Error
+        ? error.message
+        : "An unexpected network error occurred.",
   };
+};
+
+// ── GET auth config ───────────────────────────────────────────────────────────
+export async function getAuthConfig(
+  tenantId: string,
+): Promise<ApiResponse<AuthConfigPayload>> {
+  try {
+    const response = await fetch(
+      `${API_BASE_URL}/api/auth-config/${tenantId}`,
+      {
+        method: "GET",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+      },
+    );
+    return await response.json();
+  } catch (error) {
+    return handleNetworkError<AuthConfigPayload>(error);
+  }
 }
 
 // ── UPDATE auth config ────────────────────────────────────────────────────────
 export async function updateAuthConfig(
   tenantId: string,
-  payload: Partial<AuthConfigPayload>
+  payload: Partial<AuthConfigPayload>,
 ): Promise<ApiResponse<AuthConfigPayload>> {
-  // TODO: PUT /api/auth-config/:tenantId
-  console.log("[API placeholder] updateAuthConfig", tenantId, payload);
-  await delay(800);
-
-  return {
-    success: true,
-    message: "Authentication configuration updated successfully.",
-    data: { tenantId, ...payload } as AuthConfigPayload,
-  };
+  try {
+    const response = await fetch(
+      `${API_BASE_URL}/api/auth-config/${tenantId}`,
+      {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify(payload),
+      },
+    );
+    return await response.json();
+  } catch (error) {
+    return handleNetworkError<AuthConfigPayload>(error);
+  }
 }
 
 // ── VALIDATE config ───────────────────────────────────────────────────────────
 export async function validateAuthConfig(
-  payload: Partial<AuthConfigPayload>
+  payload: Partial<AuthConfigPayload>,
 ): Promise<ApiResponse<{ valid: boolean; errors?: string[] }>> {
-  // TODO: POST /api/auth-config/validate
-  console.log("[API placeholder] validateAuthConfig", payload);
-  await delay(400);
-
-  return {
-    success: true,
-    message: "Validation passed.",
-    data: { valid: true },
-  };
-}
-
-// ── Helpers ───────────────────────────────────────────────────────────────────
-function delay(ms: number) {
-  return new Promise((res) => setTimeout(res, ms));
+  try {
+    const response = await fetch(`${API_BASE_URL}/api/auth-config/validate`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      credentials: "include",
+      body: JSON.stringify(payload),
+    });
+    return await response.json();
+  } catch (error) {
+    return handleNetworkError<{ valid: boolean; errors?: string[] }>(error);
+  }
 }
