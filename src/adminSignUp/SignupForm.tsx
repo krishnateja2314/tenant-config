@@ -157,7 +157,7 @@ export function SignupForm() {
         <Input
           label="Full Name"
           type="text"
-          placeholder="Krishna Teja"
+          placeholder="John Doe"
           value={form.name}
           onChange={handleChange("name")}
           error={errors.name}
