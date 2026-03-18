@@ -7,20 +7,10 @@ import { useState } from "react";
 export interface SaveStatus {
   type: "success" | "error" | "validation";
   text: string;
-  errors?: string[]; // validation error list from backend
+  errors?: string[];
 }
 
-/**
- * Shared save hook used by all config pages.
- *
- * Flow:
- *   1. POST /api/auth-config/validate  — backend checks cross-field rules
- *   2. If valid → PUT /api/auth-config/:tenantId  — persist the config
- *   3. On success → resetAllDirty + invalidate query cache
- *
- * Returns { save, isPending, saveStatus, clearStatus } so each page
- * just calls save() on button click and renders saveStatus.
- */
+
 export function useSaveConfig() {
   const admin = useAuthStore((s) => s.admin);
   const tenantId = admin?.tenantId ?? "";

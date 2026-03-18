@@ -12,14 +12,14 @@ export interface Admin {
 interface AuthState {
   admin: Admin | null;
   isAuthenticated: boolean;
-  sessionVerified: boolean; // true once the boot-time /me check has completed
+  sessionVerified: boolean;
 
-  // Mid-login state (between password step and MFA step)
+
   mfaPending: boolean;
   mfaSessionToken: string | null;
   pendingEmail: string | null;
 
-  // Actions
+
   setMFAPending: (sessionToken: string, email: string) => void;
   setAdmin: (admin: Admin) => void;
   setSessionVerified: (verified: boolean) => void;
@@ -59,7 +59,7 @@ export const useAuthStore = create<AuthState>()(
         set({
           admin: null,
           isAuthenticated: false,
-          sessionVerified: true, // verified = true even on clear (check done, result: invalid)
+          sessionVerified: true,
           mfaPending: false,
           mfaSessionToken: null,
           pendingEmail: null,
@@ -68,7 +68,6 @@ export const useAuthStore = create<AuthState>()(
     {
       name: "tc-auth",
       storage: createJSONStorage(() => sessionStorage),
-      // Only persist admin profile and auth flag — never tokens
       partialize: (state) => ({
         admin: state.admin,
         isAuthenticated: state.isAuthenticated,

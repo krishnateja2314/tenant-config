@@ -260,7 +260,7 @@ export function SaveStatusAlert({ status }: { status: SaveStatus }) {
     );
   }
 
-  // type === "error"
+
   return (
     <motion.div
       initial={{ opacity: 0, y: -8 }}
