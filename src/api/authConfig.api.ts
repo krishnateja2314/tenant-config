@@ -25,7 +25,7 @@ export interface ApiResponse<T = unknown> {
   data?: T;
 }
 
-// Import the base URL from Vite environment variables
+
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "";
 
 // Helper for handling fetch errors consistently
