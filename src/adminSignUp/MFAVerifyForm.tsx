@@ -210,10 +210,6 @@ export function MFAVerifyForm() {
           {resendCooldown > 0 ? `Resend in ${resendCooldown}s` : "Resend OTP"}
         </button>
       </div>
-
-      <p className="text-center text-xs text-text-muted mt-4">
-        Hint for demo: use <code className="text-accent font-mono">123456</code>
-      </p>
     </motion.div>
   );
 }
