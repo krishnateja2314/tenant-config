@@ -17,7 +17,8 @@ import { AuthSettingsPage } from "./authConfig/AuthSettingsPage";
 import { PasswordPolicyPage } from "./authConfig/PasswordPolicyPage";
 import { SSOOTPPage } from "./authConfig/SSOOTPPage";
 import { SessionRulesPage } from "./authConfig/SessionRulesPage";
-
+import { AuthConfigDoc } from "./doc/authConfigDoc";
+import { motion } from "framer-motion";
 // ── 404 Component ─────────────────────────────────────────────────────────────
 const NotFoundPage = () => (
   <div
@@ -114,6 +115,20 @@ const mfaRoute = createRoute({
   ),
 });
 
+const docRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: "/auth-config-doc",
+  component: () => (
+    <motion.div
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      transition={{ duration: 0.5 }}
+      className="p-8"
+    >
+      <AuthConfigDoc />
+    </motion.div>
+  ),
+});
 // ── Dashboard routes (Protect against unauthorized access) ────────────────────
 
 // Reusable guard for routes where unauthenticated users SHOULD NOT be
@@ -181,6 +196,7 @@ const routeTree = rootRoute.addChildren([
   loginRoute,
   signupRoute,
   mfaRoute,
+  docRoute,
   authConfigRoute.addChildren([
     authConfigIndexRoute,
     passwordPolicyRoute,

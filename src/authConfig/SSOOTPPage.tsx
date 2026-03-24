@@ -2,6 +2,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { useQuery } from "@tanstack/react-query";
 import { getAuthConfig } from "../api/authConfig.api";
 import { useAuthStore } from "../store/auth.store";
+import { redirect } from "@tanstack/react-router";
 import {
   useAuthConfigStore,
   useIsDirty,
@@ -230,13 +231,14 @@ export function SSOOTPPage() {
             <p className="text-xs font-semibold text-accent mb-1">
               Integration Note
             </p>
-            <p className="text-xs text-text-muted leading-relaxed">
-              The Authentication Team will consume these settings via{" "}
-              <code className="text-accent font-mono text-[11px]">
-                GET /api/auth-config/:tenantId
-              </code>{" "}
-              to enforce the appropriate login flow dynamically for each tenant.
-            </p>
+            <button
+              onClick={() => redirect({ to: "/auth-config-doc" })}
+              className="text-sm text-accent underline"
+            >
+              <p className="text-sm text-accent underline">
+                View API documentation for SSO & OTP configuration
+              </p>
+            </button>
           </div>
         </motion.div>
       </div>
