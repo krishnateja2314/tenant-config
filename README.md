@@ -1,7 +1,5 @@
 # Tenant Configuration Control Panel — Sprint 2 Frontend
 
-**Group 3 | Krishna Teja | Frontend Developer**
-
 A full-featured React admin dashboard for tenant authentication configuration, built with:
 - **React 18** + **TypeScript**
 - **TanStack Router** — type-safe file-based routing
@@ -58,7 +56,7 @@ npm run dev
 ```
 
 The dev server starts at `http://localhost:5173`.
-API calls are proxied to `http://localhost:3001` (your Express backend).
+API calls are proxied to `http://localhost:3001` add this to .env or link to your backend as VITE_API_BASE_URL.
 
 ---
 
@@ -72,28 +70,9 @@ API calls are proxied to `http://localhost:3001` (your Express backend).
 /auth-config  (protected dashboard)
 ```
 
-> **Demo OTP:** `123456` (remove this hint before production)
 
 ---
 
-## Replacing API Placeholders
-
-All API stubs live in `src/api/`. Each function has a `TODO` comment with the exact endpoint:
-
-| File | Function | Endpoint |
-|------|----------|----------|
-| `auth.api.ts` | `loginAdmin` | `POST /api/admin/login` |
-| `auth.api.ts` | `verifyMFA` | `POST /api/admin/verify-mfa` |
-| `auth.api.ts` | `signupAdmin` | `POST /api/admin/signup` |
-| `auth.api.ts` | `logoutAdmin` | `POST /api/admin/logout` |
-| `auth.api.ts` | `resendOTP` | `POST /api/admin/resend-otp` |
-| `authConfig.api.ts` | `getAuthConfig` | `GET /api/auth-config/:tenantId` |
-| `authConfig.api.ts` | `updateAuthConfig` | `PUT /api/auth-config/:tenantId` |
-| `authConfig.api.ts` | `validateAuthConfig` | `POST /api/auth-config/validate` |
-
-Replace each placeholder body with a real `fetch`/`axios` call. The JWT is stored as an HttpOnly cookie by the backend — the browser sends it automatically with `credentials: "include"`.
-
----
 
 ## Security Notes
 
