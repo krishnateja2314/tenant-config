@@ -17,7 +17,7 @@ import { AuthSettingsPage } from "./authConfig/AuthSettingsPage";
 import { PasswordPolicyPage } from "./authConfig/PasswordPolicyPage";
 import { SSOOTPPage } from "./authConfig/SSOOTPPage";
 import { SessionRulesPage } from "./authConfig/SessionRulesPage";
-import { AuthConfigDoc } from "./doc/authConfigDoc";
+import { AuthConfigDoc } from "./doc/AuthConfigDoc";
 import { motion } from "framer-motion";
 // ── 404 Component ─────────────────────────────────────────────────────────────
 const NotFoundPage = () => (

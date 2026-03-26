@@ -3,6 +3,7 @@ import { useQuery } from "@tanstack/react-query";
 import { getAuthConfig } from "../api/authConfig.api";
 import { useAuthStore } from "../store/auth.store";
 import { redirect } from "@tanstack/react-router";
+import { router } from "../router";
 import {
   useAuthConfigStore,
   useIsDirty,
@@ -232,12 +233,11 @@ export function SSOOTPPage() {
               Integration Note
             </p>
             <button
-              onClick={() => redirect({ to: "/auth-config-doc" })}
-              className="text-sm text-accent underline"
+              onClick={() => {router.navigate({ to: "/auth-config-doc" }); console.log("Redirecting to documentation...");}}
+              className="text-sm text-accent underline p-4"
             >
-              <p className="text-sm text-accent underline">
                 View API documentation for SSO & OTP configuration
-              </p>
+              
             </button>
           </div>
         </motion.div>
