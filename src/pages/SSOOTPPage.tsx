@@ -1,13 +1,13 @@
 import { motion, AnimatePresence } from "framer-motion";
 import { useQuery } from "@tanstack/react-query";
-import { getAuthConfig } from "../api/authConfig.api";
-import { useAuthStore } from "../store/auth.store";
+import { getAuthConfig } from "../features/auth-config/services/authConfigApi";
+import { useAuthStore } from "../stores/auth.store";
 import { redirect } from "@tanstack/react-router";
 import {
   useAuthConfigStore,
   useIsDirty,
   useIsReadOnly,
-} from "../store/authConfig.store";
+} from "../features/auth-config/authConfig.store";
 import {
   Toggle,
   Button,
@@ -16,9 +16,9 @@ import {
   Spinner,
   Badge,
   SaveStatusAlert,
-} from "../components/ui";
+} from "../shared/components";
 import { useEffect } from "react";
-import { useSaveConfig } from "./useSaveConfig";
+import { useSaveConfig } from "../features/auth-config/hooks/useSaveConfig";
 
 const PAGE: "sso-otp" = "sso-otp";
 const AVAILABLE_ROLES = [

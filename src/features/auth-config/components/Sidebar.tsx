@@ -1,23 +1,53 @@
 import { motion } from "framer-motion";
 import { useRouterState } from "@tanstack/react-router";
 import { useMutation } from "@tanstack/react-query";
-import { logoutAdmin } from "../api/auth.api";
-import { useAuthStore } from "../store/auth.store";
-import { useAuthConfigStore, useAnyDirty, useIsDirty, type PageKey } from "../store/authConfig.store";
-import { router } from "../router";
+import { logoutAdmin } from "../../../features/auth/services/authApi";
+import { useAuthStore } from "../../../stores/auth.store";
+import {
+  useAuthConfigStore,
+  useAnyDirty,
+  useIsDirty,
+  type PageKey,
+} from "../authConfig.store";
+import { router } from "../../../config/routes";
 
-const NAV_ITEMS: { label: string; path: string; icon: string; pageKey: PageKey }[] = [
-  { label: "Auth Settings",  path: "/auth-config",                 icon: "⚙", pageKey: "auth-settings"  },
-  { label: "Password Policy",path: "/auth-config/password-policy", icon: "🔑", pageKey: "password-policy" },
-  { label: "SSO & OTP",      path: "/auth-config/sso-otp",         icon: "🔗", pageKey: "sso-otp"         },
-  { label: "Session Rules",  path: "/auth-config/session",         icon: "⏱", pageKey: "session"         },
+const NAV_ITEMS: {
+  label: string;
+  path: string;
+  icon: string;
+  pageKey: PageKey;
+}[] = [
+  {
+    label: "Auth Settings",
+    path: "/auth-config",
+    icon: "⚙",
+    pageKey: "auth-settings",
+  },
+  {
+    label: "Password Policy",
+    path: "/auth-config/password-policy",
+    icon: "🔑",
+    pageKey: "password-policy",
+  },
+  {
+    label: "SSO & OTP",
+    path: "/auth-config/sso-otp",
+    icon: "🔗",
+    pageKey: "sso-otp",
+  },
+  {
+    label: "Session Rules",
+    path: "/auth-config/session",
+    icon: "⏱",
+    pageKey: "session",
+  },
 ];
 
 function NavItem({
   item,
   isActive,
 }: {
-  item: typeof NAV_ITEMS[number];
+  item: (typeof NAV_ITEMS)[number];
   isActive: boolean;
 }) {
   // Each nav item subscribes only to its own page's dirty state
@@ -79,7 +109,9 @@ export function Sidebar() {
           </div>
           <div>
             <p className="text-sm font-bold text-text-primary">TenantConfig</p>
-            <p className="text-[10px] text-text-muted uppercase tracking-wider">Control Panel</p>
+            <p className="text-[10px] text-text-muted uppercase tracking-wider">
+              Control Panel
+            </p>
           </div>
         </div>
       </div>
@@ -87,8 +119,12 @@ export function Sidebar() {
       {/* Tenant badge */}
       {admin && (
         <div className="mx-4 mt-4 px-3 py-2 bg-accent/10 border border-accent/20 rounded-lg">
-          <p className="text-[10px] font-semibold uppercase tracking-widest text-accent">Active Tenant</p>
-          <p className="text-xs text-text-primary font-medium mt-0.5 truncate">{admin.tenantId}</p>
+          <p className="text-[10px] font-semibold uppercase tracking-widest text-accent">
+            Active Tenant
+          </p>
+          <p className="text-xs text-text-primary font-medium mt-0.5 truncate">
+            {admin.tenantId}
+          </p>
         </div>
       )}
 
@@ -100,7 +136,9 @@ export function Sidebar() {
           className="mx-4 mt-3 px-3 py-2 bg-amber-500/10 border border-amber-500/20 rounded-lg flex items-center gap-2"
         >
           <span className="w-1.5 h-1.5 rounded-full bg-amber-400 flex-shrink-0 animate-pulse" />
-          <p className="text-[10px] font-semibold text-amber-400">Unsaved changes</p>
+          <p className="text-[10px] font-semibold text-amber-400">
+            Unsaved changes
+          </p>
         </motion.div>
       )}
 
@@ -111,10 +149,9 @@ export function Sidebar() {
         </p>
         {NAV_ITEMS.map((item) => {
           const isActive =
-            currentPath === item.path || currentPath.startsWith(item.path + "/");
-          return (
-            <NavItem key={item.path} item={item} isActive={isActive} />
-          );
+            currentPath === item.path ||
+            currentPath.startsWith(item.path + "/");
+          return <NavItem key={item.path} item={item} isActive={isActive} />;
         })}
       </nav>
 
@@ -128,8 +165,12 @@ export function Sidebar() {
               </span>
             </div>
             <div className="flex-1 min-w-0">
-              <p className="text-xs font-semibold text-text-primary truncate">{admin.name}</p>
-              <p className="text-[10px] text-text-muted truncate">{admin.role}</p>
+              <p className="text-xs font-semibold text-text-primary truncate">
+                {admin.name}
+              </p>
+              <p className="text-[10px] text-text-muted truncate">
+                {admin.role}
+              </p>
             </div>
           </div>
         )}

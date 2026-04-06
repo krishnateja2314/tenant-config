@@ -1,7 +1,7 @@
 import { ReactNode, useEffect } from "react";
-import { useAuthStore } from "../store/auth.store";
-import { Sidebar } from "./Sidebar";
-import { router } from "../router";
+import { useAuthStore } from "../stores/auth.store";
+import { Sidebar } from "../features/auth-config/components/Sidebar";
+import { router } from "../config/routes";
 
 interface DashboardLayoutProps {
   children: ReactNode;
@@ -21,9 +21,7 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
   return (
     <div className="min-h-screen bg-canvas flex">
       <Sidebar />
-      <main className="flex-1 overflow-auto">
-        {children}
-      </main>
+      <main className="flex-1 overflow-auto">{children}</main>
     </div>
   );
 }

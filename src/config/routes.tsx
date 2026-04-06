@@ -7,17 +7,17 @@ import {
   Link, // Added Link for the 404 page
 } from "@tanstack/react-router";
 
-import { useAuthStore } from "./store/auth.store"; // Import the store
-import { AuthLayout } from "./adminSignUp/AuthLayout";
-import { LoginForm } from "./adminSignUp/LoginForm";
-import { MFAVerifyForm } from "./adminSignUp/MFAVerifyForm";
-import { SignupForm } from "./adminSignUp/SignupForm";
-import { DashboardLayout } from "./authConfig/DashboardLayout";
-import { AuthSettingsPage } from "./authConfig/AuthSettingsPage";
-import { PasswordPolicyPage } from "./authConfig/PasswordPolicyPage";
-import { SSOOTPPage } from "./authConfig/SSOOTPPage";
-import { SessionRulesPage } from "./authConfig/SessionRulesPage";
-import { AuthConfigDoc } from "./doc/authConfigDoc";
+import { useAuthStore } from "../stores/auth.store"; // Import the store
+import { AuthLayout } from "../layouts/AuthLayout";
+import { LoginForm } from "../features/auth/components/LoginForm";
+import { MFAVerifyForm } from "../features/auth/components/MFAVerifyForm";
+import { SignupForm } from "../features/auth/components/SignupForm";
+import { DashboardLayout } from "../layouts/DashboardLayout";
+import { AuthSettingsPage } from "../pages/AuthSettingsPage";
+import { PasswordPolicyPage } from "../pages/PasswordPolicyPage";
+import { SSOOTPPage } from "../pages/SSOOTPPage";
+import { SessionRulesPage } from "../pages/SessionRulesPage";
+import { AuthConfigDoc } from "../pages/AuthConfigDoc";
 import { motion } from "framer-motion";
 // ── 404 Component ─────────────────────────────────────────────────────────────
 const NotFoundPage = () => (

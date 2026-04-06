@@ -1,5 +1,5 @@
 import { create } from "zustand";
-import type { AuthConfigPayload } from "../api/authConfig.api";
+import type { AuthConfigPayload } from "./services/authConfigApi";
 
 // Keys must match the path segments used in NAV_ITEMS in Sidebar.tsx
 export type PageKey =
@@ -57,7 +57,7 @@ export function useAnyDirty(): boolean {
 }
 
 // ── Role helper ───────────────────────────────────────────────────────────────
-import { useAuthStore } from "./auth.store";
+import { useAuthStore } from "../../stores/auth.store";
 
 export function useIsReadOnly(): boolean {
   const role = useAuthStore((s) => s.admin?.role);

@@ -1,9 +1,9 @@
 import { useEffect } from "react";
 import { RouterProvider } from "@tanstack/react-router";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { router } from "./router";
-import { verifySession } from "./api/auth.api";
-import { useAuthStore } from "./store/auth.store";
+import { router } from "../config/routes";
+import { verifySession } from "../features/auth/services/authApi";
+import { useAuthStore } from "../stores/auth.store";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -17,14 +17,19 @@ const queryClient = new QueryClient({
 
 // Inner component so it can use the Zustand hook
 function AppBootstrap() {
-  const { isAuthenticated, sessionVerified, setAdmin, clearAuth, setSessionVerified } =
-    useAuthStore((s) => ({
-      isAuthenticated: s.isAuthenticated,
-      sessionVerified: s.sessionVerified,
-      setAdmin: s.setAdmin,
-      clearAuth: s.clearAuth,
-      setSessionVerified: s.setSessionVerified,
-    }));
+  const {
+    isAuthenticated,
+    sessionVerified,
+    setAdmin,
+    clearAuth,
+    setSessionVerified,
+  } = useAuthStore((s) => ({
+    isAuthenticated: s.isAuthenticated,
+    sessionVerified: s.sessionVerified,
+    setAdmin: s.setAdmin,
+    clearAuth: s.clearAuth,
+    setSessionVerified: s.setSessionVerified,
+  }));
 
   useEffect(() => {
     if (!isAuthenticated) {
@@ -32,21 +37,19 @@ function AppBootstrap() {
       return;
     }
 
-
-    verifySession().then((res) => {
-      if (res.success && res.data?.admin) {
-
-        setAdmin(res.data.admin);
-      } else {
-
+    verifySession()
+      .then((res) => {
+        if (res.success && res.data?.admin) {
+          setAdmin(res.data.admin);
+        } else {
+          clearAuth();
+          router.navigate({ to: "/login" });
+        }
+      })
+      .catch(() => {
         clearAuth();
         router.navigate({ to: "/login" });
-      }
-    }).catch(() => {
-
-      clearAuth();
-      router.navigate({ to: "/login" });
-    });
+      });
   }, []);
 
   if (!sessionVerified) {

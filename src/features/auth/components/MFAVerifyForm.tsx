@@ -2,9 +2,9 @@ import { useState, useRef, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useNavigate } from "@tanstack/react-router";
 import { useMutation } from "@tanstack/react-query";
-import { verifyMFA, resendOTP } from "../api/auth.api";
-import { useAuthStore } from "../store/auth.store";
-import { Button, Alert } from "../components/ui";
+import { verifyMFA, resendOTP } from "../services/authApi";
+import { useAuthStore } from "../../../stores/auth.store";
+import { Button, Alert } from "../../../shared/components";
 
 const OTP_LENGTH = 6;
 

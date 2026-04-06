@@ -2,10 +2,10 @@ import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useNavigate } from "@tanstack/react-router";
 import { useMutation } from "@tanstack/react-query";
-import { loginAdmin } from "../api/auth.api";
-import { useAuthStore } from "../store/auth.store";
-import { Input, Button, Alert } from "../components/ui";
-import { router } from "../router";
+import { loginAdmin } from "../services/authApi";
+import { useAuthStore } from "../../../stores/auth.store";
+import { Input, Button, Alert } from "../../../shared/components";
+import { router } from "../../../config/routes";
 
 interface FormState {
   email: string;
@@ -20,9 +20,11 @@ interface FormErrors {
 function validate(form: FormState): FormErrors {
   const errors: FormErrors = {};
   if (!form.email.trim()) errors.email = "Email is required.";
-  else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email)) errors.email = "Enter a valid email address.";
+  else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email))
+    errors.email = "Enter a valid email address.";
   if (!form.password) errors.password = "Password is required.";
-  else if (form.password.length < 6) errors.password = "Password must be at least 6 characters.";
+  else if (form.password.length < 6)
+    errors.password = "Password must be at least 6 characters.";
   return errors;
 }
 
@@ -45,15 +47,18 @@ export function LoginForm() {
       }
     },
     onError: () => {
-      setServerError("Network error. Please check your connection and try again.");
+      setServerError(
+        "Network error. Please check your connection and try again.",
+      );
     },
   });
 
-  const handleChange = (field: keyof FormState) => (e: React.ChangeEvent<HTMLInputElement>) => {
-    setForm((f) => ({ ...f, [field]: e.target.value }));
-    setErrors((err) => ({ ...err, [field]: undefined }));
-    setServerError(null);
-  };
+  const handleChange =
+    (field: keyof FormState) => (e: React.ChangeEvent<HTMLInputElement>) => {
+      setForm((f) => ({ ...f, [field]: e.target.value }));
+      setErrors((err) => ({ ...err, [field]: undefined }));
+      setServerError(null);
+    };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -73,7 +78,9 @@ export function LoginForm() {
       className="w-full"
     >
       <div className="mb-8">
-        <h2 className="text-2xl font-bold text-text-primary tracking-tight">Tenant Configuration</h2>
+        <h2 className="text-2xl font-bold text-text-primary tracking-tight">
+          Tenant Configuration
+        </h2>
         <p className="text-sm text-text-muted mt-1.5">
           Sign in to your tenant configuration dashboard
         </p>
@@ -128,7 +135,8 @@ export function LoginForm() {
       <div className="mt-6 flex items-center gap-2 bg-surface-2 rounded-lg px-4 py-3 border border-border">
         <div className="w-1.5 h-1.5 rounded-full bg-accent animate-pulse flex-shrink-0" />
         <p className="text-xs text-text-muted leading-relaxed">
-          A one-time password will be sent to your registered email after password verification.
+          A one-time password will be sent to your registered email after
+          password verification.
         </p>
       </div>
     </motion.div>

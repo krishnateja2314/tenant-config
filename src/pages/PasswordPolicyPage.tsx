@@ -1,12 +1,12 @@
 import { motion, AnimatePresence } from "framer-motion";
 import { useQuery } from "@tanstack/react-query";
-import { getAuthConfig } from "../api/authConfig.api";
-import { useAuthStore } from "../store/auth.store";
+import { getAuthConfig } from "../features/auth-config/services/authConfigApi";
+import { useAuthStore } from "../stores/auth.store";
 import {
   useAuthConfigStore,
   useIsDirty,
   useIsReadOnly,
-} from "../store/authConfig.store";
+} from "../features/auth-config/authConfig.store";
 import {
   Toggle,
   Button,
@@ -14,9 +14,9 @@ import {
   Card,
   Spinner,
   SaveStatusAlert,
-} from "../components/ui";
+} from "../shared/components";
 import { useState, useEffect } from "react";
-import { useSaveConfig } from "./useSaveConfig";
+import { useSaveConfig } from "../features/auth-config/hooks/useSaveConfig";
 
 const PAGE: "password-policy" = "password-policy";
 

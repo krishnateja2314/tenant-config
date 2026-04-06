@@ -52,46 +52,65 @@ h4,
 h5,
 h6 {
   font-family: "Syne", system-ui, sans-serif;
+  font-weight: 600;
   line-height: 1.2;
+  color: var(--color-text-primary);
 }
 
-/* ── Scrollbar ──────────────────────────────────────────────────────────────── */
-::-webkit-scrollbar {
-  width: 4px;
-  height: 4px;
-}
-::-webkit-scrollbar-track {
-  background: var(--color-surface);
-}
-::-webkit-scrollbar-thumb {
-  background: var(--color-border);
-  border-radius: 100px;
-}
-::-webkit-scrollbar-thumb:hover {
-  background: var(--color-text-muted);
+h1 {
+  font-size: 2.5rem;
 }
 
-/* ── Range input styling ────────────────────────────────────────────────────── */
-input[type="range"] {
-  -webkit-appearance: none;
-  appearance: none;
-}
-input[type="range"]::-webkit-slider-thumb {
-  -webkit-appearance: none;
+h2 {
+  font-size: 2rem;
 }
 
-/* ── Number input — hide arrows ─────────────────────────────────────────────── */
-input[type="number"]::-webkit-inner-spin-button,
-input[type="number"]::-webkit-outer-spin-button {
-  -webkit-appearance: none;
+h3 {
+  font-size: 1.5rem;
+}
+
+h4 {
+  font-size: 1.25rem;
+}
+
+h5 {
+  font-size: 1.125rem;
+}
+
+h6 {
+  font-size: 1rem;
+}
+
+p {
   margin: 0;
 }
-input[type="number"] {
-  -moz-appearance: textfield;
+
+a {
+  color: var(--color-accent);
+  text-decoration: none;
+  transition: color 0.2s ease;
 }
 
-/* ── Selection ──────────────────────────────────────────────────────────────── */
-::selection {
-  background: rgba(79, 110, 247, 0.3);
-  color: var(--color-text-primary);
+a:hover {
+  color: var(--color-accent-hover);
+}
+
+button {
+  font-family: inherit;
+  border: none;
+  background: none;
+  cursor: pointer;
+}
+
+/* ── Utilities ──────────────────────────────────────────────────────────────── */
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
 }

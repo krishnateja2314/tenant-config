@@ -1,7 +1,10 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { validateAuthConfig, updateAuthConfig } from "../api/authConfig.api";
-import { useAuthStore } from "../store/auth.store";
-import { useAuthConfigStore } from "../store/authConfig.store";
+import {
+  validateAuthConfig,
+  updateAuthConfig,
+} from "../services/authConfigApi";
+import { useAuthStore } from "../../../stores/auth.store";
+import { useAuthConfigStore } from "../authConfig.store";
 import { useState } from "react";
 
 export interface SaveStatus {
@@ -9,7 +12,6 @@ export interface SaveStatus {
   text: string;
   errors?: string[];
 }
-
 
 export function useSaveConfig() {
   const admin = useAuthStore((s) => s.admin);
@@ -33,7 +35,7 @@ export function useSaveConfig() {
       if (!validation.success || !validation.data?.valid) {
         // Throw a structured error so onError can handle it
         const err = new ValidationError(
-          validation.data?.errors ?? ["Configuration is invalid."]
+          validation.data?.errors ?? ["Configuration is invalid."],
         );
         throw err;
       }
@@ -44,7 +46,10 @@ export function useSaveConfig() {
 
     onSuccess: (res) => {
       if (res.success) {
-        setSaveStatus({ type: "success", text: "All changes saved successfully." });
+        setSaveStatus({
+          type: "success",
+          text: "All changes saved successfully.",
+        });
         resetAllDirty();
         queryClient.invalidateQueries({ queryKey: ["auth-config", tenantId] });
       } else {

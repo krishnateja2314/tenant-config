@@ -2,9 +2,9 @@ import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useNavigate } from "@tanstack/react-router";
 import { useMutation } from "@tanstack/react-query";
-import { signupAdmin } from "../api/auth.api";
-import { Input, Button, Alert } from "../components/ui";
-import { router } from "../router";
+import { signupAdmin } from "../services/authApi";
+import { Input, Button, Alert } from "../../../shared/components";
+import { router } from "../../../config/routes";
 
 interface FormState {
   name: string;
