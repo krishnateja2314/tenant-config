@@ -19,6 +19,7 @@ import { SSOOTPPage } from "../pages/SSOOTPPage";
 import { SessionRulesPage } from "../pages/SessionRulesPage";
 import { AuthConfigDoc } from "../pages/AuthConfigDoc";
 import { motion } from "framer-motion";
+import { DomainConfigurationPage } from "../pages/DomainConfigurationPage";
 // ── 404 Component ─────────────────────────────────────────────────────────────
 const NotFoundPage = () => (
   <div
@@ -175,6 +176,12 @@ const sessionRoute = createRoute({
   component: SessionRulesPage,
 });
 
+const domainsRoute = createRoute({
+  getParentRoute: () => authConfigRoute,
+  path: "/domains",
+  component: DomainConfigurationPage,
+});
+
 // ── Index redirect ────────────────────────────────────────────────────────────
 const indexRoute = createRoute({
   getParentRoute: () => rootRoute,
@@ -202,6 +209,7 @@ const routeTree = rootRoute.addChildren([
     passwordPolicyRoute,
     ssoOtpRoute,
     sessionRoute,
+    domainsRoute, 
   ]),
 ]);
 
