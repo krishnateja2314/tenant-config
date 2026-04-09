@@ -11,18 +11,23 @@ import {
 } from "../authConfig.store";
 import { router } from "../../../config/routes";
 
-// --- CHANGED: Added Domain Structure to NAV_ITEMS ---
 const NAV_ITEMS: {
   label: string;
   path: string;
   icon: string;
-  pageKey: PageKey | string; // Adjusted to allow the new key
+  pageKey: PageKey | string;
 }[] = [
   {
     label: "Domain Structure",
     path: "/auth-config/domains",
     icon: "🏢",
     pageKey: "domain-structure",
+  },
+  {
+    label: "Mailing Lists", // NEW ITEM
+    path: "/auth-config/mailing-lists",
+    icon: "✉️",
+    pageKey: "mailing-lists",
   },
   {
     label: "Auth Settings",
@@ -57,8 +62,8 @@ function NavItem({
   item: (typeof NAV_ITEMS)[number];
   isActive: boolean;
 }) {
-  // @ts-ignore - bypassing strict PageKey check for the new route temporarily
-  const isDirty = useIsDirty(item.pageKey as PageKey);
+  // @ts-ignore - bypassing strict PageKey check for the new routes
+  const isDirty = useIsDirty(item.pageKey);
 
   return (
     <button

@@ -4,10 +4,10 @@ import {
   createRoute,
   Outlet,
   redirect,
-  Link, // Added Link for the 404 page
+  Link,
 } from "@tanstack/react-router";
 
-import { useAuthStore } from "../stores/auth.store"; // Import the store
+import { useAuthStore } from "../stores/auth.store";
 import { AuthLayout } from "../layouts/AuthLayout";
 import { LoginForm } from "../features/auth/components/LoginForm";
 import { MFAVerifyForm } from "../features/auth/components/MFAVerifyForm";
@@ -18,8 +18,10 @@ import { PasswordPolicyPage } from "../pages/PasswordPolicyPage";
 import { SSOOTPPage } from "../pages/SSOOTPPage";
 import { SessionRulesPage } from "../pages/SessionRulesPage";
 import { AuthConfigDoc } from "../pages/AuthConfigDoc";
-import { motion } from "framer-motion";
 import { DomainConfigurationPage } from "../pages/DomainConfigurationPage";
+import { MailingListsPage } from "../pages/MailingListsPage"; // NEW IMPORT
+import { motion } from "framer-motion";
+
 // ── 404 Component ─────────────────────────────────────────────────────────────
 const NotFoundPage = () => (
   <div
@@ -63,11 +65,8 @@ const rootRoute = createRootRoute({
 });
 
 // ── Auth routes (Redirect away if already logged in) ──────────────────────────
-
-// Reusable guard for routes where authenticated users SHOULD NOT be (login, signup)
 const preventAuthenticatedGuard = () => {
   const { isAuthenticated, admin } = useAuthStore.getState();
-  // Verify proper significance: Must be marked authenticated AND have a valid admin payload
   if (isAuthenticated && admin?.tenantId) {
     throw redirect({ to: "/auth-config" });
   }
@@ -100,11 +99,9 @@ const mfaRoute = createRoute({
   path: "/verify-mfa",
   beforeLoad: () => {
     const { isAuthenticated, admin, mfaPending } = useAuthStore.getState();
-    // If fully authenticated, go to dashboard
     if (isAuthenticated && admin?.tenantId) {
       throw redirect({ to: "/auth-config" });
     }
-    // If they arrived here but MFA isn't actually pending, kick them to login
     if (!mfaPending) {
       throw redirect({ to: "/login" });
     }
@@ -130,12 +127,10 @@ const docRoute = createRoute({
     </motion.div>
   ),
 });
-// ── Dashboard routes (Protect against unauthorized access) ────────────────────
 
-// Reusable guard for routes where unauthenticated users SHOULD NOT be
+// ── Dashboard routes (Protect against unauthorized access) ────────────────────
 const requireAuthenticatedGuard = () => {
   const { isAuthenticated, admin } = useAuthStore.getState();
-  // Strict check: if missing the flag OR the admin data is corrupt/missing
   if (!isAuthenticated || !admin?.tenantId) {
     throw redirect({ to: "/login" });
   }
@@ -144,7 +139,7 @@ const requireAuthenticatedGuard = () => {
 const authConfigRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: "/auth-config",
-  beforeLoad: requireAuthenticatedGuard, // Protects all child routes!
+  beforeLoad: requireAuthenticatedGuard,
   component: () => (
     <DashboardLayout>
       <Outlet />
@@ -176,10 +171,18 @@ const sessionRoute = createRoute({
   component: SessionRulesPage,
 });
 
+// Domain Configuration Route (From previous step)
 const domainsRoute = createRoute({
   getParentRoute: () => authConfigRoute,
   path: "/domains",
   component: DomainConfigurationPage,
+});
+
+// NEW: Mailing Lists Route
+const mailingListsRoute = createRoute({
+  getParentRoute: () => authConfigRoute,
+  path: "/mailing-lists",
+  component: MailingListsPage,
 });
 
 // ── Index redirect ────────────────────────────────────────────────────────────
@@ -209,11 +212,11 @@ const routeTree = rootRoute.addChildren([
     passwordPolicyRoute,
     ssoOtpRoute,
     sessionRoute,
-    domainsRoute, 
+    domainsRoute,
+    mailingListsRoute, // <--- Registered here
   ]),
 ]);
 
-// Include the 404 component here
 export const router = createRouter({
   routeTree,
   defaultNotFoundComponent: NotFoundPage,

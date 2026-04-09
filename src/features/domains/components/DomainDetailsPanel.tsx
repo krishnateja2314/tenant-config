@@ -5,8 +5,18 @@ import { Button } from "../../../shared/components/Button";
 import { Input } from "../../../shared/components/Input";
 import { DomainType } from "../types/domain.types";
 import { useAuthStore } from "../../../stores/auth.store";
-
+import { Check } from "lucide-react";
 export function DomainDetailsPanel() {
+  const [copied, setCopied] = useState(false);
+
+  const handleCopy = () => {
+    if (selectedNode?._id) {
+      navigator.clipboard.writeText(selectedNode._id);
+      setCopied(true);
+      // Reset back to "Copy" after 2 seconds
+      setTimeout(() => setCopied(false), 2000);
+    }
+  };
   const admin = useAuthStore((s) => s.admin);
   const isTenantAdmin = admin?.role === "TENANT_ADMIN";
 
@@ -103,7 +113,6 @@ export function DomainDetailsPanel() {
     commitLocalChange(newNodes, { id: selectedNode._id, type: "DELETE" });
   };
 
-  // --- RENDER STATES ---
   if (!selectedNode && !isCreatingChild) {
     return (
       <Card className="h-full flex items-center justify-center">
@@ -210,7 +219,6 @@ export function DomainDetailsPanel() {
     );
   }
 
-  // --- VIEW MODE ---
   const hasChildren = localNodes.some(
     (n) => n.parentDomainId === selectedNode?._id,
   );
@@ -237,8 +245,6 @@ export function DomainDetailsPanel() {
             <Button variant="ghost" onClick={() => setIsEditing(true)}>
               Edit
             </Button>
-
-            {/* STRICT DELETE LOGIC: Visible to Tenant Admin, enabled ONLY for Leaf Nodes */}
             {isTenantAdmin && (
               <Button
                 variant="danger"
@@ -255,6 +261,45 @@ export function DomainDetailsPanel() {
             )}
           </div>
         </div>
+
+        {/* --- DOMAIN ID DISPLAY BLOCK --- */}
+        <div className="bg-accent/5 border border-accent/20 rounded-xl p-4">
+          <div className="flex justify-between items-start mb-2">
+            <h3 className="text-xs font-semibold uppercase tracking-wider text-accent">
+              Domain Identifier
+            </h3>
+          </div>
+          <p className="text-xs text-text-muted mb-3">
+            Copy this ID to link Mailing Lists, Infrastructure, or Academic
+            configurations to this specific domain.
+          </p>
+          <div className="flex items-center justify-between bg-surface border border-border rounded-lg p-2.5">
+            <code className="text-sm text-text-primary font-mono select-all">
+              {selectedNode?._id}
+            </code>
+            <button
+              onClick={handleCopy}
+              className={`flex items-center gap-2 text-[10px] font-semibold px-3 py-1.5 rounded transition-all ${
+                copied
+                  ? "bg-green-500/10 text-green-500 border border-green-500/20"
+                  : "bg-surface-2 hover:bg-border text-text-primary"
+              }`}
+              title="Copy to clipboard"
+            >
+              {copied ? (
+                <>
+                  <Check size={12} />
+                  <span>Copied</span>
+                </>
+              ) : (
+                <>
+                  <span>Copy ID</span>
+                </>
+              )}
+            </button>
+          </div>
+        </div>
+        {/* ---------------------------------- */}
 
         <div className="space-y-4">
           <h3 className="text-sm font-semibold text-text-primary">
