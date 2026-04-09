@@ -2,7 +2,7 @@ import { useEffect } from "react";
 import { useDomains } from "../features/domains/hooks/useDomains";
 import { useDomainWorkspaceStore } from "../features/domains/stores/domain.store";
 import { TreeList } from "../features/domains/components/TreeList";
-import { TreeCanvas } from "../features/domains/components/TreeCanvas"; // NEW IMPORT
+import { TreeCanvas } from "../features/domains/components/TreeCanvas";
 import { ResizableLayout } from "../features/domains/components/ResizableLayout";
 import { DomainDetailsPanel } from "../features/domains/components/DomainDetailsPanel";
 import { Card } from "../shared/components/Card";
@@ -26,7 +26,7 @@ export function DomainConfigurationPage() {
     setSelectedNodeId,
     setIsCreatingChild,
     viewMode,
-    setViewMode, // Pulled in ViewMode state
+    setViewMode,
   } = useDomainWorkspaceStore();
 
   useEffect(() => {
@@ -52,8 +52,6 @@ export function DomainConfigurationPage() {
   // ---------------------------------------------
   const LeftPane = (
     <Card className="h-full flex flex-col overflow-hidden p-0">
-      {" "}
-      {/* Removed padding to let canvas breathe */}
       <div className="flex justify-between items-center p-4 border-b border-border z-10 bg-surface">
         <div>
           <h3 className="text-base font-semibold text-text-primary">
@@ -64,22 +62,36 @@ export function DomainConfigurationPage() {
           </p>
         </div>
 
-        {/* VIEW TOGGLE BUTTONS */}
-        <div className="flex bg-surface-2 p-1 rounded-lg border border-border">
-          <button
-            onClick={() => setViewMode("list")}
-            className={`px-3 py-1 text-xs font-medium rounded-md transition-colors ${viewMode === "list" ? "bg-surface text-accent shadow-sm" : "text-text-muted hover:text-text-primary"}`}
-          >
-            List
-          </button>
-          <button
-            onClick={() => setViewMode("canvas")}
-            className={`px-3 py-1 text-xs font-medium rounded-md transition-colors ${viewMode === "canvas" ? "bg-surface text-accent shadow-sm" : "text-text-muted hover:text-text-primary"}`}
-          >
-            Canvas
-          </button>
+        {/* VIEW TOGGLES & ROOT CREATION */}
+        <div className="flex gap-4 items-center">
+          {/* NEW: Persistent Root Creation Button for Tenant Admins */}
+          {isTenantAdmin && (
+            <Button
+              variant="ghost"
+              className="px-3 py-1.5 text-xs border border-border"
+              onClick={handleInitiateRootCreation}
+            >
+              + Add Root
+            </Button>
+          )}
+
+          <div className="flex bg-surface-2 p-1 rounded-lg border border-border">
+            <button
+              onClick={() => setViewMode("list")}
+              className={`px-3 py-1 text-xs font-medium rounded-md transition-colors ${viewMode === "list" ? "bg-surface text-accent shadow-sm" : "text-text-muted hover:text-text-primary"}`}
+            >
+              List
+            </button>
+            <button
+              onClick={() => setViewMode("canvas")}
+              className={`px-3 py-1 text-xs font-medium rounded-md transition-colors ${viewMode === "canvas" ? "bg-surface text-accent shadow-sm" : "text-text-muted hover:text-text-primary"}`}
+            >
+              Canvas
+            </button>
+          </div>
         </div>
       </div>
+
       <div
         className={`flex-1 overflow-hidden relative ${viewMode === "list" ? "p-4 overflow-y-auto" : ""}`}
       >
@@ -88,7 +100,6 @@ export function DomainConfigurationPage() {
             <span className="animate-spin h-6 w-6 border-2 border-accent border-t-transparent rounded-full" />
           </div>
         ) : localNodes.length > 0 ? (
-          // RENDER BASED ON VIEW MODE
           viewMode === "list" ? (
             <TreeList parentId={null} level={0} />
           ) : (
@@ -111,7 +122,6 @@ export function DomainConfigurationPage() {
 
   return (
     <div className="p-8 h-[calc(100vh-4rem)] flex flex-col gap-4">
-      {/* WORKSPACE TOOLBAR */}
       <div className="flex justify-between items-center bg-surface border border-border rounded-xl p-3 px-5 shadow-sm">
         <div className="flex gap-2">
           <Button
@@ -148,7 +158,6 @@ export function DomainConfigurationPage() {
         </div>
       </div>
 
-      {/* RESIZABLE WORKSPACE */}
       <div className="flex-1 min-h-0">
         <ResizableLayout
           leftPane={LeftPane}

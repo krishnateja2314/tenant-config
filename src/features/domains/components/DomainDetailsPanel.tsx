@@ -22,7 +22,6 @@ export function DomainDetailsPanel() {
 
   const selectedNode = localNodes.find((n) => n._id === selectedNodeId);
 
-  // Form State
   const [formData, setFormData] = useState({
     domainName: "",
     domainType: "DEPARTMENT" as DomainType,
@@ -30,7 +29,6 @@ export function DomainDetailsPanel() {
     domainAdminId: "",
   });
 
-  // Populate form when entering edit mode
   useEffect(() => {
     if (isEditing && selectedNode) {
       setFormData({
@@ -49,13 +47,11 @@ export function DomainDetailsPanel() {
     }
   }, [isEditing, isCreatingChild, selectedNode]);
 
-  // Handle Form Submission (Both Create and Edit)
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!formData.domainName.trim()) return;
 
     if (isEditing && selectedNode) {
-      // UPDATE LOCALLY
       const updatedNode = {
         ...selectedNode,
         domainName: formData.domainName,
@@ -77,7 +73,6 @@ export function DomainDetailsPanel() {
       });
       setIsEditing(false);
     } else if (isCreatingChild) {
-      // CREATE LOCALLY
       const isRoot = !selectedNode;
       const tempId = `temp-${Date.now()}`;
       const newNode = {
@@ -156,7 +151,6 @@ export function DomainDetailsPanel() {
               />
             </div>
 
-            {/* Roots must stay ROOT type. Only allow type change if not editing a Root, or creating a child */}
             {(!isEditing || selectedNode?.parentDomainId !== null) && (
               <div>
                 <label className="text-xs font-semibold text-text-primary mb-1 block">
@@ -192,7 +186,6 @@ export function DomainDetailsPanel() {
               />
             </div>
 
-            {/* RBAC: Only Tenant Admin can edit the assigned Domain Admin */}
             {isTenantAdmin && (
               <div>
                 <label className="text-xs font-semibold text-accent mb-1 block">
@@ -244,13 +237,17 @@ export function DomainDetailsPanel() {
             <Button variant="ghost" onClick={() => setIsEditing(true)}>
               Edit
             </Button>
+
+            {/* STRICT DELETE LOGIC: Visible to Tenant Admin, enabled ONLY for Leaf Nodes */}
             {isTenantAdmin && (
               <Button
                 variant="danger"
                 onClick={handleDeleteLocal}
                 disabled={hasChildren}
                 title={
-                  hasChildren ? "Cannot delete nodes with children" : "Delete"
+                  hasChildren
+                    ? "Delete Disabled: You can only delete leaf nodes (nodes with no children)."
+                    : "Delete this domain"
                 }
               >
                 Delete

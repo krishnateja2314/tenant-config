@@ -2,7 +2,6 @@ import { useState, useRef, useEffect } from "react";
 import { DomainNode } from "../types/domain.types";
 import { useDomainWorkspaceStore } from "../stores/domain.store";
 
-// Helper: Cycle check for drag and drop
 const isDescendant = (
   nodes: DomainNode[],
   targetId: string,
@@ -24,7 +23,6 @@ function CanvasNode({ node }: { node: DomainNode }) {
   const children = localNodes.filter((n) => n.parentDomainId === node._id);
   const isSelected = selectedNodeId === node._id;
 
-  // Drag and Drop Logic
   const handleDragStart = (e: React.DragEvent) => {
     e.dataTransfer.setData("domainId", node._id);
     e.stopPropagation();
@@ -63,7 +61,6 @@ function CanvasNode({ node }: { node: DomainNode }) {
   return (
     <li className="relative float-left text-center list-none px-2 pt-6 pb-0 transition-all duration-300">
       <div className="flex flex-col items-center justify-center">
-        {/* THE NODE CARD */}
         <div
           draggable
           onDragStart={handleDragStart}
@@ -101,7 +98,6 @@ function CanvasNode({ node }: { node: DomainNode }) {
         </div>
       </div>
 
-      {/* CHILDREN CONTAINER */}
       {children.length > 0 && (
         <ul className="pt-6 relative transition-all duration-300 flex justify-center">
           {children.map((child) => (
@@ -118,23 +114,23 @@ export function TreeCanvas() {
   const { localNodes } = useDomainWorkspaceStore();
   const rootNodes = localNodes.filter((n) => n.parentDomainId === null);
 
-  // Pan and Zoom State
   const [scale, setScale] = useState(1);
   const [position, setPosition] = useState({ x: 0, y: 50 });
   const isDragging = useRef(false);
   const dragStart = useRef({ x: 0, y: 0 });
-  const containerRef = useRef<HTMLDivElement>(null);
 
-  // Handle zooming via scroll wheel
+  const containerRef = useRef<HTMLDivElement>(null); // The Viewport
+  const treeContainerRef = useRef<HTMLDivElement>(null); // The actual drawn tree
+
   useEffect(() => {
     const container = containerRef.current;
     if (!container) return;
 
     const handleWheel = (e: WheelEvent) => {
-      e.preventDefault(); // Prevent page scrolling
+      e.preventDefault();
       const zoomSensitivity = 0.0015;
       const newScale = Math.min(
-        Math.max(0.2, scale - e.deltaY * zoomSensitivity),
+        Math.max(0.1, scale - e.deltaY * zoomSensitivity),
         3,
       );
       setScale(newScale);
@@ -144,11 +140,8 @@ export function TreeCanvas() {
     return () => container.removeEventListener("wheel", handleWheel);
   }, [scale]);
 
-  // Handle Panning
   const handleMouseDown = (e: React.MouseEvent) => {
-    // Prevent panning if we are clicking/dragging a node card
     if ((e.target as HTMLElement).closest(".node-card")) return;
-
     isDragging.current = true;
     dragStart.current = {
       x: e.clientX - position.x,
@@ -168,6 +161,40 @@ export function TreeCanvas() {
     isDragging.current = false;
   };
 
+  // NEW: Fit to Screen Algorithm
+  const fitToScreen = () => {
+    if (!containerRef.current || !treeContainerRef.current) return;
+
+    const viewport = containerRef.current.getBoundingClientRect();
+    // Get the unscaled width/height of the actual tree content
+    const treeWidth = treeContainerRef.current.offsetWidth;
+    const treeHeight = treeContainerRef.current.offsetHeight;
+
+    if (treeWidth === 0 || treeHeight === 0) return;
+
+    const padding = 80; // 80px padding around the edges
+    const scaleX = (viewport.width - padding) / treeWidth;
+    const scaleY = (viewport.height - padding) / treeHeight;
+
+    // Pick the smaller scale so it fits entirely, clamp between 0.1 and 3
+    const newScale = Math.min(Math.max(0.1, Math.min(scaleX, scaleY)), 3);
+
+    // Calculate center coordinates
+    const newX = (viewport.width - treeWidth * newScale) / 2;
+    const newY = (viewport.height - treeHeight * newScale) / 2;
+
+    setScale(newScale);
+    setPosition({ x: newX, y: newY });
+  };
+
+  // Auto-fit on initial load if there are nodes
+  useEffect(() => {
+    if (rootNodes.length > 0) {
+      // Small timeout to allow the DOM to render the tree first before measuring
+      setTimeout(fitToScreen, 50);
+    }
+  }, []);
+
   return (
     <div
       ref={containerRef}
@@ -177,7 +204,6 @@ export function TreeCanvas() {
       onMouseLeave={handleMouseUp}
       className="relative w-full h-full overflow-hidden bg-surface-2 cursor-move"
       style={{
-        // Checkerboard Background that scales and pans with the tree!
         backgroundImage: `
           linear-gradient(to right, rgba(0,0,0,0.05) 1px, transparent 1px),
           linear-gradient(to bottom, rgba(0,0,0,0.05) 1px, transparent 1px)
@@ -186,7 +212,6 @@ export function TreeCanvas() {
         backgroundPosition: `${position.x}px ${position.y}px`,
       }}
     >
-      {/* CSS to draw the Org Chart Lines */}
       <style>{`
         .org-tree ul::before { content: ''; position: absolute; top: 0; left: 50%; border-left: 2px solid #e5e7eb; width: 0; height: 24px; transform: translateX(-50%); }
         .org-tree li::before, .org-tree li::after { content: ''; position: absolute; top: 0; right: 50%; border-top: 2px solid #e5e7eb; width: 50%; height: 24px; }
@@ -199,22 +224,22 @@ export function TreeCanvas() {
         .org-tree.root-level > li::before, .org-tree.root-level > li::after { display: none; }
       `}</style>
 
-      {/* The Transform Layer */}
       <div
         className="absolute top-0 left-0 origin-top-left transition-transform duration-75 ease-linear"
         style={{
           transform: `translate(${position.x}px, ${position.y}px) scale(${scale})`,
         }}
       >
-        <div className="flex justify-center min-w-max p-10">
+        {/* We wrap the tree in inline-block so it hugs the content, allowing accurate measurement */}
+        <div ref={treeContainerRef} className="inline-block p-10 min-w-max">
           {rootNodes.length > 0 ? (
-            <ul className="org-tree root-level flex justify-center gap-8">
+            <ul className="org-tree root-level flex justify-center gap-12">
               {rootNodes.map((rootNode) => (
                 <CanvasNode key={rootNode._id} node={rootNode} />
               ))}
             </ul>
           ) : (
-            <div className="text-text-muted mt-20">
+            <div className="text-text-muted">
               No domains to display. Create a root domain.
             </div>
           )}
@@ -224,7 +249,14 @@ export function TreeCanvas() {
       {/* Zoom Controls Overlay */}
       <div className="absolute bottom-4 right-4 flex gap-2 bg-surface p-1 rounded-lg border border-border shadow-sm">
         <button
-          onClick={() => setScale((s) => Math.max(0.2, s - 0.2))}
+          onClick={fitToScreen}
+          className="px-3 flex items-center justify-center rounded hover:bg-surface-2 text-text-primary text-xs font-semibold border-r border-border"
+          title="Fit to Screen"
+        >
+          [ ] Fit
+        </button>
+        <button
+          onClick={() => setScale((s) => Math.max(0.1, s - 0.2))}
           className="w-8 h-8 flex items-center justify-center rounded hover:bg-surface-2 text-text-primary font-bold"
         >
           -
