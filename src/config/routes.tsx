@@ -20,6 +20,8 @@ import { SessionRulesPage } from "../pages/SessionRulesPage";
 import { AuthConfigDoc } from "../pages/AuthConfigDoc";
 import { DomainConfigurationPage } from "../pages/DomainConfigurationPage";
 import { MailingListsPage } from "../pages/MailingListsPage"; // NEW IMPORT
+import { CentralAuthPage } from "../pages/CentralAuthPage";
+import { TenantSignupPage } from "../pages/TenantSignupPage";
 import { motion } from "framer-motion";
 
 // ── 404 Component ─────────────────────────────────────────────────────────────
@@ -90,6 +92,32 @@ const signupRoute = createRoute({
   component: () => (
     <AuthLayout>
       <SignupForm />
+    </AuthLayout>
+  ),
+});
+
+const centralAuthRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: "/tenantconfig/auth/$tenantId",
+  validateSearch: (search) => ({
+    callbackUrl: search.callbackUrl as string | undefined,
+  }),
+  component: () => (
+    <AuthLayout>
+      <CentralAuthPage />
+    </AuthLayout>
+  ),
+});
+
+const tenantSignupRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: "/tenantconfig/signup/$tenantId",
+  validateSearch: (search) => ({
+    callbackUrl: search.callbackUrl as string | undefined,
+  }),
+  component: () => (
+    <AuthLayout>
+      <TenantSignupPage />
     </AuthLayout>
   ),
 });
@@ -205,6 +233,8 @@ const routeTree = rootRoute.addChildren([
   indexRoute,
   loginRoute,
   signupRoute,
+  centralAuthRoute,
+  tenantSignupRoute,
   mfaRoute,
   docRoute,
   authConfigRoute.addChildren([
