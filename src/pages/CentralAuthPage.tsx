@@ -209,8 +209,9 @@ export function CentralAuthPage() {
           <p className="text-sm text-center text-text-muted">
             Need an account?{" "}
             <Link
-              to={`/tenantconfig/signup/${tenantId}`}
-              search={callbackUrl ? { callbackUrl } : undefined}
+              to="/tenantconfig/signup/$tenantId"
+              params={{ tenantId: tenantId || "" }}
+              search={{ callbackUrl }}
               className="text-accent hover:underline font-medium"
             >
               Sign up
