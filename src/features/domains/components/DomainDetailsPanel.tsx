@@ -92,7 +92,7 @@ export function DomainDetailsPanel() {
         parentDomainId: isRoot ? null : selectedNode._id,
         domainAdminId: formData.domainAdminId || null,
         metadata: {
-          domainType: isRoot ? "ROOT" : formData.domainType,
+          domainType: formData.domainType,
           description: formData.description,
         },
         createdAt: new Date().toISOString(),

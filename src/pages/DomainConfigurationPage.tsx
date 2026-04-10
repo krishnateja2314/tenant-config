@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useDomains } from "../features/domains/hooks/useDomains";
 import { useDomainWorkspaceStore } from "../features/domains/stores/domain.store";
 import { TreeList } from "../features/domains/components/TreeList";
@@ -8,8 +8,10 @@ import { DomainDetailsPanel } from "../features/domains/components/DomainDetails
 import { Card } from "../shared/components/Card";
 import { Button } from "../shared/components/Button";
 import { useAuthStore } from "../stores/auth.store";
+import { domainApi } from "../features/domains/services/domainApi";
 
 export function DomainConfigurationPage() {
+  const [isSaving, setIsSaving] = useState(false);
   const admin = useAuthStore((s) => s.admin);
   const isTenantAdmin = admin?.role === "TENANT_ADMIN";
 
@@ -23,6 +25,7 @@ export function DomainConfigurationPage() {
     redo,
     pastStates,
     futureStates,
+    clearPendingMutations,
     setSelectedNodeId,
     setIsCreatingChild,
     viewMode,
@@ -35,11 +38,81 @@ export function DomainConfigurationPage() {
     }
   }, [treeQuery.data]);
 
-  const handleSaveWorkspace = () => {
-    console.log("Pushing mutations to backend:", pendingMutations);
-    alert(
-      `Saving ${pendingMutations.length} changes to backend... (Check console)`,
-    );
+  const handleSaveWorkspace = async () => {
+    if (!admin?.tenantId || pendingMutations.length === 0 || isSaving) {
+      return;
+    }
+
+    setIsSaving(true);
+
+    try {
+      const tempIdMap = new Map<string, string>();
+
+      for (const mutation of pendingMutations) {
+        if (mutation.type === "CREATE") {
+          const parentId = mutation.data?.parentDomainId;
+          const resolvedParentId = parentId && tempIdMap.has(parentId)
+            ? tempIdMap.get(parentId) || null
+            : parentId;
+
+          const created = await domainApi.create(admin.tenantId, {
+            domainName: mutation.data?.domainName || "",
+            parentDomainId: resolvedParentId ?? null,
+            domainAdminId: mutation.data?.domainAdminId ?? null,
+            metadata: {
+              domainType: mutation.data?.metadata?.domainType || "DEPARTMENT",
+              description: mutation.data?.metadata?.description || "",
+            },
+          });
+
+          tempIdMap.set(mutation.id, created._id);
+          continue;
+        }
+
+        const targetId = tempIdMap.get(mutation.id) || mutation.id;
+
+        if (mutation.type === "UPDATE") {
+          if (targetId.startsWith("temp-")) {
+            continue;
+          }
+
+          const parentId = mutation.data?.parentDomainId;
+          const resolvedParentId = parentId && tempIdMap.has(parentId)
+            ? tempIdMap.get(parentId) || null
+            : parentId;
+
+          await domainApi.update(targetId, {
+            domainName: mutation.data?.domainName,
+            parentDomainId: resolvedParentId,
+            domainAdminId: mutation.data?.domainAdminId,
+            metadata: mutation.data?.metadata,
+          });
+          continue;
+        }
+
+        if (mutation.type === "DELETE") {
+          if (targetId.startsWith("temp-")) {
+            continue;
+          }
+
+          await domainApi.delete(targetId);
+        }
+      }
+
+      const refreshed = await treeQuery.refetch();
+      if (refreshed.data) {
+        initWorkspace(refreshed.data);
+      }
+      clearPendingMutations();
+    } catch (error) {
+      const message =
+        error instanceof Error
+          ? error.message
+          : "Failed to save domain workspace";
+      alert(message);
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   const handleInitiateRootCreation = () => {
@@ -150,10 +223,10 @@ export function DomainConfigurationPage() {
           )}
           <Button
             variant={pendingMutations.length > 0 ? "primary" : "secondary"}
-            disabled={pendingMutations.length === 0}
+            disabled={pendingMutations.length === 0 || isSaving}
             onClick={handleSaveWorkspace}
           >
-            Save Workspace
+            {isSaving ? "Saving..." : "Save Workspace"}
           </Button>
         </div>
       </div>

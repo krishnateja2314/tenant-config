@@ -112,7 +112,10 @@ function CanvasNode({ node }: { node: DomainNode }) {
 // --- Main Canvas Wrapper ---
 export function TreeCanvas() {
   const { localNodes } = useDomainWorkspaceStore();
-  const rootNodes = localNodes.filter((n) => n.parentDomainId === null);
+  const nodeIds = new Set(localNodes.map((node) => node._id));
+  const rootNodes = localNodes.filter(
+    (n) => n.parentDomainId === null || !nodeIds.has(n.parentDomainId),
+  );
 
   const [scale, setScale] = useState(1);
   const [position, setPosition] = useState({ x: 0, y: 50 });

@@ -24,7 +24,14 @@ interface TreeListProps {
 
 export function TreeList({ parentId, level }: TreeListProps) {
   const { localNodes } = useDomainWorkspaceStore();
-  const children = localNodes.filter((n) => n.parentDomainId === parentId);
+  const nodeIds = new Set(localNodes.map((node) => node._id));
+  const children = localNodes.filter((n) => {
+    if (parentId !== null) {
+      return n.parentDomainId === parentId;
+    }
+
+    return n.parentDomainId === null || !nodeIds.has(n.parentDomainId);
+  });
 
   if (children.length === 0) return null;
 
