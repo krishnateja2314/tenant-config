@@ -1,17 +1,23 @@
-import { useMemo, useState } from "react";
-import { Link, useParams, useSearch } from "@tanstack/react-router";
+import { useEffect, useRef, useState } from "react";
+import { toCanvas } from "qrcode";
+import { Link } from "@tanstack/react-router";
 import { Input, Button, Alert } from "../shared/components";
 import {
+  getAuthConfig,
   identifyUser,
   loginUser,
   verifyOtp,
+  verifyTotp,
 } from "../features/auth/services/centralAuthApi";
 
-type Step = "identify" | "challenge" | "verifyOtp" | "success";
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "";
+
+type Step = "identify" | "challenge" | "verifyOtp" | "verifyTotp" | "success";
 
 export function CentralAuthPage() {
-  const { tenantId } = useParams({ from: "/tenantconfig/auth/$tenantId" });
-  const { callbackUrl } = useSearch({ from: "/tenantconfig/auth/$tenantId" });
+  const [tenantId, setTenantId] = useState<string | null>(null);
+  const [routeDomainId, setRouteDomainId] = useState<string | null>(null);
+  const [callbackUrl, setCallbackUrl] = useState<string | undefined>(undefined);
 
   const [step, setStep] = useState<Step>("identify");
   const [email, setEmail] = useState("");
@@ -24,13 +30,101 @@ export function CentralAuthPage() {
   const [domainId, setDomainId] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [finalToken, setFinalToken] = useState<string | null>(null);
+  const [isTotpSetup, setIsTotpSetup] = useState(false);
+  const [totpSecret, setTotpSecret] = useState<string | null>(null);
+  const [otpauthUrl, setOtpauthUrl] = useState<string | null>(null);
+  const qrCanvasRef = useRef<HTMLCanvasElement | null>(null);
+  const [qrLoadError, setQrLoadError] = useState(false);
+  const [isGeneratingQr, setIsGeneratingQr] = useState(false);
 
-  const modeLabel = useMemo(() => {
-    if (step === "identify") return "Identify";
-    if (step === "challenge") return "Authenticate";
-    if (step === "verifyOtp") return "Verify OTP";
-    return "Success";
-  }, [step]);
+  const passwordEnabled = authConfig?.passwordEnabled ?? false;
+  const ssoEnabled = authConfig?.ssoEnabled ?? false;
+  const otpEnabled = authConfig?.otpEnabled ?? false;
+  const canRequestOtp = authConfig != null && !passwordEnabled && otpEnabled;
+  const canUseSso = authConfig != null && ssoEnabled;
+
+  useEffect(() => {
+    if (!otpauthUrl) {
+      setQrLoadError(false);
+      setIsGeneratingQr(false);
+      if (qrCanvasRef.current) {
+        const canvas = qrCanvasRef.current;
+        const context = canvas.getContext("2d");
+        if (context) {
+          context.clearRect(0, 0, canvas.width, canvas.height);
+        }
+      }
+      return;
+    }
+
+    let canceled = false;
+    setQrLoadError(false);
+    setIsGeneratingQr(true);
+
+    const canvas = qrCanvasRef.current;
+    if (!canvas) {
+      setQrLoadError(true);
+      setIsGeneratingQr(false);
+      return;
+    }
+
+    toCanvas(canvas, otpauthUrl, { width: 250, margin: 1 })
+      .then(() => {
+        if (canceled) return;
+        setQrLoadError(false);
+        setIsGeneratingQr(false);
+      })
+      .catch((err) => {
+        console.error("QR generation failed", err);
+        if (canceled) return;
+        setQrLoadError(true);
+        setIsGeneratingQr(false);
+      });
+
+    return () => {
+      canceled = true;
+    };
+  }, [otpauthUrl]);
+
+  useEffect(() => {
+    const loadRouteParams = () => {
+      const { pathname, search } = window.location;
+      const match = pathname.match(
+        /^\/tenantconfig\/auth\/([^/]+)(?:\/([^/]+))?$/,
+      );
+      if (match) {
+        setTenantId(match[1]);
+        setRouteDomainId(match[2] ?? null);
+      }
+      const query = new URLSearchParams(search);
+      setCallbackUrl(query.get("callbackUrl") ?? undefined);
+    };
+
+    loadRouteParams();
+  }, []);
+
+  useEffect(() => {
+    const loadAuthConfig = async () => {
+      if (!tenantId) return;
+      setError(null);
+      setIsLoading(true);
+      const response = await getAuthConfig({
+        tenantId,
+        domainId: routeDomainId,
+      });
+      setIsLoading(false);
+
+      if (!response.success) {
+        setError(response.message);
+        return;
+      }
+
+      setAuthConfig(response.data?.authConfig ?? null);
+      setDomainId(routeDomainId ?? null);
+    };
+
+    loadAuthConfig();
+  }, [tenantId, routeDomainId]);
 
   const handleIdentify = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -48,7 +142,11 @@ export function CentralAuthPage() {
     }
 
     setIsLoading(true);
-    const response = await identifyUser({ tenantId, email });
+    const response = await identifyUser({
+      tenantId,
+      email,
+      domainId: routeDomainId,
+    });
     setIsLoading(false);
 
     if (!response.success) {
@@ -57,25 +155,70 @@ export function CentralAuthPage() {
     }
 
     setAuthConfig(response.data?.authConfig ?? null);
-    setDomainId(response.data?.domainId ?? null);
-    setInfo(
-      response.data?.authConfig?.passwordEnabled
-        ? "Password is required by your tenant configuration."
-        : response.data?.authConfig?.ssoEnabled
-          ? "SSO is enabled for this tenant."
-          : "Continue to complete authentication.",
-    );
+    setDomainId(response.data?.domainId ?? routeDomainId ?? null);
+    setIsTotpSetup(false);
+    setTotpSecret(null);
+    setOtpauthUrl(null);
 
-    if (response.data?.authConfig?.passwordEnabled) {
-      setStep("challenge");
-    } else if (response.data?.authConfig?.ssoEnabled) {
-      setStep("success");
-      setInfo("SSO login is enabled. Use your identity provider to continue.");
-    } else if (response.data?.authConfig?.otpEnabled) {
-      setStep("challenge");
-    } else {
-      setStep("success");
+    const passwordEnabled = response.data?.authConfig?.passwordEnabled;
+    const ssoEnabled = response.data?.authConfig?.ssoEnabled;
+    const otpEnabled = response.data?.authConfig?.otpEnabled;
+
+    if (!passwordEnabled && !ssoEnabled && otpEnabled) {
+      setInfo("OTP is enabled for this tenant. Sending a code to your email.");
+      const otpResponse = await loginUser({
+        tenantId,
+        email,
+        domainId: routeDomainId,
+      });
+      if (!otpResponse.success) {
+        setError(otpResponse.message);
+        return;
+      }
+      if (otpResponse.data?.requiresMFA && otpResponse.data?.sessionToken) {
+        setSessionToken(otpResponse.data.sessionToken);
+        setStep("verifyOtp");
+        return;
+      }
+      if (otpResponse.data?.token) {
+        setFinalToken(otpResponse.data.token);
+        setStep("success");
+        redirectCallback(otpResponse.data.token);
+        return;
+      }
+      setStep("verifyOtp");
+      return;
     }
+
+    if (!passwordEnabled && ssoEnabled) {
+      if (otpEnabled) {
+        setInfo(
+          "SSO and OTP are enabled for this tenant. Choose your identity provider or request an OTP.",
+        );
+      } else {
+        setInfo(
+          "SSO is enabled for this tenant. Use your identity provider to continue.",
+        );
+      }
+      setStep("identify");
+      return;
+    }
+
+    if (passwordEnabled) {
+      setInfo("Password is required by your tenant configuration.");
+      setStep("challenge");
+      return;
+    }
+
+    if (otpEnabled) {
+      setInfo(
+        "OTP is enabled for this tenant. Use the button below to request a code.",
+      );
+      setStep("identify");
+      return;
+    }
+
+    setStep("success");
   };
 
   const redirectCallback = (token: string) => {
@@ -98,7 +241,12 @@ export function CentralAuthPage() {
     }
 
     setIsLoading(true);
-    const response = await loginUser({ tenantId, email, password });
+    const response = await loginUser({
+      tenantId,
+      email,
+      password,
+      domainId: routeDomainId,
+    });
     setIsLoading(false);
 
     if (!response.success) {
@@ -107,9 +255,26 @@ export function CentralAuthPage() {
     }
 
     if (response.data?.requiresMFA && response.data?.sessionToken) {
+      const receivedOtpauthUrl = response.data.otpauthUrl ?? null;
       setSessionToken(response.data.sessionToken);
-      setStep("verifyOtp");
+      setOtpauthUrl(receivedOtpauthUrl);
+      setTotpSecret(response.data.totpSecret ?? null);
+      if (response.data.requiresTotpSetup) {
+        setIsTotpSetup(true);
+        setInfo(
+          "MFA setup is required. Scan the QR code or enter the secret in your authenticator app.",
+        );
+        setStep("verifyTotp");
+        return;
+      }
+      if (response.data.requiresTotp) {
+        setInfo("Enter the authenticator code from your app.");
+        setStep("verifyTotp");
+        return;
+      }
+
       setInfo("Enter the OTP sent to your email.");
+      setStep("verifyOtp");
       return;
     }
 
@@ -151,6 +316,69 @@ export function CentralAuthPage() {
 
     setError("Unable to complete OTP verification.");
   };
+
+  const handleVerifyTotp = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setError(null);
+    setInfo(null);
+
+    if (!email.trim() || !sessionToken || !otp.trim()) {
+      setError("Email, authenticator code and session must all be provided.");
+      return;
+    }
+
+    setIsLoading(true);
+    const response = await verifyTotp({
+      email,
+      sessionToken,
+      totp: otp,
+    });
+    setIsLoading(false);
+
+    if (!response.success) {
+      setError(response.message);
+      return;
+    }
+
+    if (response.data?.token) {
+      setFinalToken(response.data.token);
+      setStep("success");
+      redirectCallback(response.data.token);
+      return;
+    }
+
+    setError("Unable to complete authenticator verification.");
+  };
+
+  useEffect(() => {
+    const urlParams = new URLSearchParams(window.location.search);
+    const queryRequiresTotp = urlParams.get("requiresTotp");
+    const queryRequiresTotpSetup = urlParams.get("requiresTotpSetup");
+    const queryEmail = urlParams.get("email");
+    const querySessionToken = urlParams.get("sessionToken");
+    const queryOtpauthUrl = urlParams.get("otpauthUrl");
+    const queryTotpSecret = urlParams.get("totpSecret");
+
+    if (
+      queryEmail &&
+      querySessionToken &&
+      (queryRequiresTotp || queryRequiresTotpSetup)
+    ) {
+      setEmail(queryEmail);
+      setSessionToken(querySessionToken);
+      setIsTotpSetup(
+        !!(queryRequiresTotpSetup || queryOtpauthUrl || queryTotpSecret),
+      );
+      setOtpauthUrl(queryOtpauthUrl || null);
+      setTotpSecret(queryTotpSecret || null);
+      setStep("verifyTotp");
+      setInfo(
+        queryRequiresTotpSetup || queryOtpauthUrl || queryTotpSecret
+          ? "MFA setup is required. Scan the QR code or enter the secret in your authenticator app."
+          : "Enter the authenticator code from your app.",
+      );
+    }
+  }, []);
 
   return (
     <div className="space-y-6">
@@ -203,9 +431,23 @@ export function CentralAuthPage() {
             autoComplete="email"
             error={undefined}
           />
-          <Button loading={isLoading} type="submit" className="w-full">
-            Continue
-          </Button>
+          {(!authConfig || authConfig.passwordEnabled) && (
+            <Button loading={isLoading} type="submit" className="w-full">
+              Continue
+            </Button>
+          )}
+
+          {canRequestOtp && (
+            <Button
+              loading={isLoading}
+              type="button"
+              onClick={handleLogin}
+              className="w-full"
+            >
+              Send OTP
+            </Button>
+          )}
+
           <p className="text-sm text-center text-text-muted">
             Need an account?{" "}
             <Link
@@ -217,6 +459,30 @@ export function CentralAuthPage() {
               Sign up
             </Link>
           </p>
+
+          {authConfig?.ssoEnabled && (
+            <div className="pt-4 border-t border-border">
+              <p className="text-xs text-text-muted mb-3">
+                If your tenant has SSO enabled, you can use your identity
+                provider instead of password login.
+              </p>
+              <Button
+                type="button"
+                onClick={() => {
+                  window.location.href = `${API_BASE_URL}/api/central-auth/oauth/google?tenantId=${encodeURIComponent(
+                    tenantId || "",
+                  )}&callbackUrl=${encodeURIComponent(
+                    callbackUrl ||
+                      window.location.origin + `/tenantconfig/auth/${tenantId}`,
+                  )}`;
+                }}
+                className="w-full"
+                variant="secondary"
+              >
+                Continue with Google SSO
+              </Button>
+            </div>
+          )}
         </form>
       )}
 
@@ -233,9 +499,33 @@ export function CentralAuthPage() {
               autoComplete="current-password"
             />
           )}
-          <Button loading={isLoading} type="submit" className="w-full">
-            Continue
-          </Button>
+          {authConfig?.passwordEnabled && (
+            <Button loading={isLoading} type="submit" className="w-full">
+              Continue
+            </Button>
+          )}
+          {authConfig?.ssoEnabled && (
+            <div className="pt-4 border-t border-border">
+              <p className="text-xs text-text-muted mb-3">
+                You can also log in through your identity provider.
+              </p>
+              <Button
+                type="button"
+                onClick={() => {
+                  window.location.href = `${API_BASE_URL}/api/central-auth/oauth/google?tenantId=${encodeURIComponent(
+                    tenantId || "",
+                  )}&callbackUrl=${encodeURIComponent(
+                    callbackUrl ||
+                      window.location.origin + `/tenantconfig/auth/${tenantId}`,
+                  )}`;
+                }}
+                className="w-full"
+                variant="secondary"
+              >
+                Continue with Google SSO
+              </Button>
+            </div>
+          )}
         </form>
       )}
 
@@ -251,6 +541,67 @@ export function CentralAuthPage() {
           />
           <Button loading={isLoading} type="submit" className="w-full">
             Verify OTP
+          </Button>
+        </form>
+      )}
+
+      {step === "verifyTotp" && (
+        <form onSubmit={handleVerifyTotp} className="space-y-5">
+          <Input label="Email Address" type="email" value={email} readOnly />
+          {otpauthUrl && (
+            <div className="rounded-2xl border border-border bg-surface-2 p-4">
+              <p className="text-sm font-semibold text-text-primary mb-3">
+                Set up your authenticator app
+              </p>
+              <p className="text-xs text-text-muted mb-3">
+                Scan the QR code below or enter the secret manually into Google
+                Authenticator / Microsoft Authenticator.
+              </p>
+              <div className="flex flex-col items-center gap-3">
+                <div className="rounded-3xl border border-border bg-white p-3 shadow-sm flex items-center justify-center">
+                  {isGeneratingQr ? (
+                    <div className="text-sm text-text-muted">
+                      Generating QR code…
+                    </div>
+                  ) : qrLoadError ? (
+                    <div className="text-sm text-red-400 text-center">
+                      Unable to generate the QR image. Please copy the secret
+                      into your authenticator app manually.
+                    </div>
+                  ) : otpauthUrl ? (
+                    <canvas
+                      ref={qrCanvasRef}
+                      width={250}
+                      height={250}
+                      className="rounded-xl"
+                    />
+                  ) : (
+                    <div className="text-sm text-text-muted text-center">
+                      QR code will appear here once MFA setup begins.
+                    </div>
+                  )}
+                </div>
+                {totpSecret && (
+                  <div className="text-xs text-text-muted break-all text-center bg-surface-2 rounded-xl px-3 py-2">
+                    {totpSecret}
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+          <Input
+            label={
+              otpauthUrl
+                ? "Enter the code from your authenticator app"
+                : "Authenticator code"
+            }
+            type="text"
+            placeholder="123456"
+            value={otp}
+            onChange={(e) => setOtp(e.target.value)}
+          />
+          <Button loading={isLoading} type="submit" className="w-full">
+            Verify Authenticator Code
           </Button>
         </form>
       )}

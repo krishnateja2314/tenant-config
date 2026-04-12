@@ -3,12 +3,19 @@ const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "";
 interface AuthConfigPayload {
   tenantId: string;
   email: string;
+  domainId?: string | null;
 }
 
 interface LoginPayload {
   tenantId: string;
   email: string;
   password?: string;
+  domainId?: string | null;
+}
+
+interface GetAuthConfigPayload {
+  tenantId: string;
+  domainId?: string | null;
 }
 
 interface VerifyOtpPayload {
@@ -53,9 +60,13 @@ export interface LoginResponse {
   message: string;
   data?: {
     requiresMFA?: boolean;
+    requiresTotp?: boolean;
+    requiresTotpSetup?: boolean;
     sessionToken?: string;
     token?: string;
     requiresSSO?: boolean;
+    otpauthUrl?: string;
+    totpSecret?: string;
   };
 }
 
@@ -85,6 +96,25 @@ export async function identifyUser(
   }
 }
 
+export async function getAuthConfig(
+  payload: GetAuthConfigPayload,
+): Promise<IdentifyResponse> {
+  try {
+    const query = new URLSearchParams();
+    query.set("tenantId", payload.tenantId);
+    if (payload.domainId) {
+      query.set("domainId", payload.domainId);
+    }
+
+    const response = await fetch(
+      `${API_BASE_URL}/api/central-auth/config?${query.toString()}`,
+    );
+    return (await response.json()) as IdentifyResponse;
+  } catch (error) {
+    return handleNetworkError(error);
+  }
+}
+
 export async function loginUser(payload: LoginPayload): Promise<LoginResponse> {
   try {
     const response = await fetch(`${API_BASE_URL}/api/central-auth/login`, {
@@ -104,6 +134,30 @@ export async function verifyOtp(
   try {
     const response = await fetch(
       `${API_BASE_URL}/api/central-auth/verify-otp`,
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      },
+    );
+    return (await response.json()) as LoginResponse;
+  } catch (error) {
+    return handleNetworkError(error);
+  }
+}
+
+interface VerifyTotpPayload {
+  email: string;
+  sessionToken: string;
+  totp: string;
+}
+
+export async function verifyTotp(
+  payload: VerifyTotpPayload,
+): Promise<LoginResponse> {
+  try {
+    const response = await fetch(
+      `${API_BASE_URL}/api/central-auth/verify-totp`,
       {
         method: "POST",
         headers: { "Content-Type": "application/json" },

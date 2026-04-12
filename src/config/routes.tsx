@@ -123,6 +123,19 @@ const tenantSignupRoute = createRoute({
   ),
 });
 
+const centralAuthDomainRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: "/tenantconfig/auth/$tenantId/$domainId",
+  validateSearch: (search) => ({
+    callbackUrl: search.callbackUrl as string | undefined,
+  }),
+  component: () => (
+    <AuthLayout>
+      <CentralAuthPage />
+    </AuthLayout>
+  ),
+});
+
 const mfaRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: "/verify-mfa",
@@ -241,6 +254,7 @@ const routeTree = rootRoute.addChildren([
   loginRoute,
   signupRoute,
   centralAuthRoute,
+  centralAuthDomainRoute,
   tenantSignupRoute,
   mfaRoute,
   docRoute,
@@ -251,7 +265,7 @@ const routeTree = rootRoute.addChildren([
     sessionRoute,
     domainsRoute,
     domainAuthConfigRoute,
-    mailingListsRoute, // <--- Registered here
+    mailingListsRoute,
   ]),
 ]);
 

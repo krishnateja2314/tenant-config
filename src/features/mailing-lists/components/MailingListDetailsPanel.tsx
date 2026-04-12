@@ -184,7 +184,7 @@ export function MailingListDetailsPanel() {
                 </select>
               </div>
 
-              <label className="flex items-center gap-3 cursor-pointer mt-3">
+              {/* <label className="flex items-center gap-3 cursor-pointer mt-3">
                 <input
                   type="checkbox"
                   checked={formData.includeChildren}
@@ -204,7 +204,7 @@ export function MailingListDetailsPanel() {
                     Apply this list to all domains nested under the target.
                   </span>
                 </div>
-              </label>
+              </label> */}
             </div>
 
             <label className="flex items-center gap-3 cursor-pointer">
