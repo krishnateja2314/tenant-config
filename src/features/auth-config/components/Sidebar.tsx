@@ -24,6 +24,12 @@ const NAV_ITEMS: {
     pageKey: "domain-structure",
   },
   {
+    label: "Domain Auth Config",
+    path: "/auth-config/domain-auth",
+    icon: "🛡",
+    pageKey: "domain-auth-config",
+  },
+  {
     label: "Mailing Lists", // NEW ITEM
     path: "/auth-config/mailing-lists",
     icon: "✉️",

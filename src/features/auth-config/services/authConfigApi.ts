@@ -8,6 +8,10 @@ export interface PasswordPolicy {
 
 export interface AuthConfigPayload {
   tenantId: string;
+  domainId?: string | null;
+  requestedDomainId?: string | null;
+  sourceType?: "domain" | "tenant" | null;
+  sourceDomainId?: string | null;
   passwordEnabled: boolean;
   ssoEnabled: boolean;
   otpEnabled: boolean;
@@ -43,10 +47,15 @@ const handleNetworkError = <T>(error: unknown): ApiResponse<T> => {
 // ── GET auth config ───────────────────────────────────────────────────────────
 export async function getAuthConfig(
   tenantId: string,
+  domainId?: string | null,
 ): Promise<ApiResponse<AuthConfigPayload>> {
   try {
+    const query =
+      domainId && domainId.length > 0
+        ? `?domainId=${encodeURIComponent(domainId)}`
+        : "";
     const response = await fetch(
-      `${API_BASE_URL}/api/auth-config/${tenantId}`,
+      `${API_BASE_URL}/api/auth-config/${tenantId}${query}`,
       {
         method: "GET",
         headers: { "Content-Type": "application/json" },
@@ -63,10 +72,15 @@ export async function getAuthConfig(
 export async function updateAuthConfig(
   tenantId: string,
   payload: Partial<AuthConfigPayload>,
+  domainId?: string | null,
 ): Promise<ApiResponse<AuthConfigPayload>> {
   try {
+    const query =
+      domainId && domainId.length > 0
+        ? `?domainId=${encodeURIComponent(domainId)}`
+        : "";
     const response = await fetch(
-      `${API_BASE_URL}/api/auth-config/${tenantId}`,
+      `${API_BASE_URL}/api/auth-config/${tenantId}${query}`,
       {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
@@ -94,5 +108,35 @@ export async function validateAuthConfig(
     return await response.json();
   } catch (error) {
     return handleNetworkError<{ valid: boolean; errors?: string[] }>(error);
+  }
+}
+
+export async function cascadeDomainAuthConfig(
+  tenantId: string,
+  domainId: string,
+): Promise<
+  ApiResponse<{
+    sourceDomainId: string;
+    scannedChildren: number;
+    skippedExisting: number;
+    cascaded: number;
+  }>
+> {
+  try {
+    const response = await fetch(`${API_BASE_URL}/api/auth-config/${tenantId}/cascade`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      credentials: "include",
+      body: JSON.stringify({ domainId }),
+    });
+
+    return await response.json();
+  } catch (error) {
+    return handleNetworkError<{
+      sourceDomainId: string;
+      scannedChildren: number;
+      skippedExisting: number;
+      cascaded: number;
+    }>(error);
   }
 }

@@ -19,6 +19,7 @@ import { SSOOTPPage } from "../pages/SSOOTPPage";
 import { SessionRulesPage } from "../pages/SessionRulesPage";
 import { AuthConfigDoc } from "../pages/AuthConfigDoc";
 import { DomainConfigurationPage } from "../pages/DomainConfigurationPage";
+import { DomainAuthConfigPage } from "../pages/DomainAuthConfigPage";
 import { MailingListsPage } from "../pages/MailingListsPage"; // NEW IMPORT
 import { CentralAuthPage } from "../pages/CentralAuthPage";
 import { TenantSignupPage } from "../pages/TenantSignupPage";
@@ -206,6 +207,12 @@ const domainsRoute = createRoute({
   component: DomainConfigurationPage,
 });
 
+const domainAuthConfigRoute = createRoute({
+  getParentRoute: () => authConfigRoute,
+  path: "/domain-auth",
+  component: DomainAuthConfigPage,
+});
+
 // NEW: Mailing Lists Route
 const mailingListsRoute = createRoute({
   getParentRoute: () => authConfigRoute,
@@ -243,6 +250,7 @@ const routeTree = rootRoute.addChildren([
     ssoOtpRoute,
     sessionRoute,
     domainsRoute,
+    domainAuthConfigRoute,
     mailingListsRoute, // <--- Registered here
   ]),
 ]);
