@@ -61,7 +61,8 @@ function CanvasNode({ node }: { node: DomainNode }) {
   return (
     <li className="relative float-left text-center list-none px-2 pt-6 pb-0 transition-all duration-300">
       <div className="flex flex-col items-center justify-center">
-        <div
+        <button
+          type="button"
           draggable
           onDragStart={handleDragStart}
           onDrop={handleDrop}
@@ -71,9 +72,10 @@ function CanvasNode({ node }: { node: DomainNode }) {
             e.stopPropagation();
             setSelectedNodeId(node._id);
           }}
-          className={`node-card relative z-10 w-48 bg-surface border rounded-xl p-3 shadow-sm cursor-grab active:cursor-grabbing transition-all hover:shadow-md ${
+          className={`node-card relative z-10 w-48 bg-surface border rounded-xl p-3 shadow-sm cursor-grab active:cursor-grabbing transition-all hover:shadow-md text-left ${
             isSelected ? "border-accent ring-2 ring-accent/20" : "border-border"
           }`}
+          aria-pressed={isSelected}
         >
           <div className="flex flex-col items-center gap-1">
             <span className="text-xs px-2 py-0.5 bg-surface-2 text-text-muted rounded-full border border-border inline-block">
@@ -95,7 +97,7 @@ function CanvasNode({ node }: { node: DomainNode }) {
               </span>
             )}
           </div>
-        </div>
+        </button>
       </div>
 
       {children.length > 0 && (
@@ -152,8 +154,8 @@ export function TreeCanvas() {
     };
   };
 
-  const handleMouseMove = (e: React.MouseEvent) => {
-    if (!isDragging.current) return;
+  const handleMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
+    if (!isDragging.current || !containerRef.current) return;
     setPosition({
       x: e.clientX - dragStart.current.x,
       y: e.clientY - dragStart.current.y,

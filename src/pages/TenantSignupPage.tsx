@@ -6,6 +6,7 @@ import { signupUser } from "../features/auth/services/centralAuthApi";
 import { getAuthConfig } from "../features/auth-config/services/authConfigApi";
 import { Input, Button, Alert, Spinner } from "../shared/components";
 import { router } from "../config/routes";
+import { isValidEmailAddress } from "../utils/email";
 
 type FormState = {
   name: string;
@@ -25,7 +26,7 @@ const validate = (form: FormState, passwordPolicy?: any): FormErrors => {
   const errors: FormErrors = {};
   if (!form.name.trim()) errors.name = "Full name is required.";
   if (!form.email.trim()) errors.email = "Email is required.";
-  else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email))
+  else if (!isValidEmailAddress(form.email))
     errors.email = "Enter a valid email address.";
   if (!form.password) errors.password = "Password is required.";
   else {

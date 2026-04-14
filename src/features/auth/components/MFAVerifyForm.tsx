@@ -7,6 +7,7 @@ import { useAuthStore } from "../../../stores/auth.store";
 import { Button, Alert } from "../../../shared/components";
 
 const OTP_LENGTH = 6;
+const createEmptyOtp = () => Array.from({ length: OTP_LENGTH }, () => "");
 
 export function MFAVerifyForm() {
   const navigate = useNavigate();
@@ -19,7 +20,7 @@ export function MFAVerifyForm() {
       admin: s.admin,
     }));
 
-  const [otp, setOtp] = useState<string[]>(Array(OTP_LENGTH).fill(""));
+  const [otp, setOtp] = useState<string[]>(createEmptyOtp());
   const [serverError, setServerError] = useState<string | null>(null);
   const [resendSuccess, setResendSuccess] = useState(false);
   const [resendCooldown, setResendCooldown] = useState(0);
@@ -50,7 +51,7 @@ export function MFAVerifyForm() {
         navigate({ to: "/auth-config" });
       } else {
         setServerError(res.message || "Verification failed.");
-        setOtp(Array(OTP_LENGTH).fill(""));
+        setOtp(createEmptyOtp());
         inputRefs.current[0]?.focus();
       }
     },

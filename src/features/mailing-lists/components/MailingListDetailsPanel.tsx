@@ -127,10 +127,14 @@ export function MailingListDetailsPanel() {
 
           <form onSubmit={handleSubmit} className="space-y-5 max-w-md">
             <div>
-              <label className="text-xs font-semibold text-text-primary mb-1 block">
+              <label
+                htmlFor="mailing-list-name"
+                className="text-xs font-semibold text-text-primary mb-1 block"
+              >
                 List Name
               </label>
               <Input
+                id="mailing-list-name"
                 value={formData.listName}
                 onChange={(e) =>
                   setFormData({ ...formData, listName: e.target.value })
@@ -141,11 +145,15 @@ export function MailingListDetailsPanel() {
             </div>
 
             <div>
-              <label className="text-xs font-semibold text-text-primary mb-1 block">
+              <label
+                htmlFor="mailing-list-domain-id"
+                className="text-xs font-semibold text-text-primary mb-1 block"
+              >
                 Target Domain ID
               </label>
               {/* In a real app, this would be an Autocomplete Dropdown connected to the Domain Query */}
               <Input
+                id="mailing-list-domain-id"
                 value={formData.domainLinkedId}
                 onChange={(e) =>
                   setFormData({ ...formData, domainLinkedId: e.target.value })
@@ -164,10 +172,14 @@ export function MailingListDetailsPanel() {
               </h3>
 
               <div>
-                <label className="text-xs font-semibold text-text-primary mb-1 block">
+                <label
+                  htmlFor="mailing-list-action"
+                  className="text-xs font-semibold text-text-primary mb-1 block"
+                >
                   Trigger Action
                 </label>
                 <select
+                  id="mailing-list-action"
                   className="w-full bg-surface border border-border rounded-lg px-3 py-2 text-sm text-text-primary"
                   value={formData.action}
                   onChange={(e) =>

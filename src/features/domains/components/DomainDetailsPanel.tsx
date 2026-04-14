@@ -39,6 +39,11 @@ export function DomainDetailsPanel() {
     domainAdminId: "",
   });
 
+  const domainNameFieldId = "domain-name-field";
+  const domainTypeFieldId = "domain-type-field";
+  const descriptionFieldId = "domain-description-field";
+  const domainAdminIdFieldId = "domain-admin-id-field";
+
   useEffect(() => {
     if (isEditing && selectedNode) {
       setFormData({
@@ -148,10 +153,14 @@ export function DomainDetailsPanel() {
 
           <form onSubmit={handleSubmit} className="space-y-4 max-w-md">
             <div>
-              <label className="text-xs font-semibold text-text-primary mb-1 block">
+              <label
+                htmlFor={domainNameFieldId}
+                className="text-xs font-semibold text-text-primary mb-1 block"
+              >
                 Domain Name
               </label>
               <Input
+                id={domainNameFieldId}
                 value={formData.domainName}
                 onChange={(e) =>
                   setFormData({ ...formData, domainName: e.target.value })
@@ -162,10 +171,14 @@ export function DomainDetailsPanel() {
 
             {(!isEditing || selectedNode?.parentDomainId !== null) && (
               <div>
-                <label className="text-xs font-semibold text-text-primary mb-1 block">
+                <label
+                  htmlFor={domainTypeFieldId}
+                  className="text-xs font-semibold text-text-primary mb-1 block"
+                >
                   Domain Type
                 </label>
                 <select
+                  id={domainTypeFieldId}
                   className="w-full bg-surface-2 border border-border rounded-lg px-3 py-2 text-sm text-text-primary focus:outline-none focus:ring-2 focus:ring-accent"
                   value={formData.domainType}
                   onChange={(e) =>
@@ -183,10 +196,14 @@ export function DomainDetailsPanel() {
             )}
 
             <div>
-              <label className="text-xs font-semibold text-text-primary mb-1 block">
+              <label
+                htmlFor={descriptionFieldId}
+                className="text-xs font-semibold text-text-primary mb-1 block"
+              >
                 Description
               </label>
               <Input
+                id={descriptionFieldId}
                 value={formData.description}
                 onChange={(e) =>
                   setFormData({ ...formData, description: e.target.value })
@@ -197,10 +214,14 @@ export function DomainDetailsPanel() {
 
             {isTenantAdmin && (
               <div>
-                <label className="text-xs font-semibold text-accent mb-1 block">
+                <label
+                  htmlFor={domainAdminIdFieldId}
+                  className="text-xs font-semibold text-accent mb-1 block"
+                >
                   Assign Domain Admin ID (RBAC)
                 </label>
                 <Input
+                  id={domainAdminIdFieldId}
                   value={formData.domainAdminId}
                   onChange={(e) =>
                     setFormData({ ...formData, domainAdminId: e.target.value })

@@ -5,6 +5,7 @@ import { useMutation } from "@tanstack/react-query";
 import { signupAdmin } from "../services/authApi";
 import { Input, Button, Alert } from "../../../shared/components";
 import { router } from "../../../config/routes";
+import { isValidEmailAddress } from "../../../utils/email";
 
 interface FormState {
   name: string;
@@ -26,7 +27,7 @@ function validate(form: FormState): FormErrors {
   const errors: FormErrors = {};
   if (!form.name.trim()) errors.name = "Full name is required.";
   if (!form.email.trim()) errors.email = "Email is required.";
-  else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email))
+  else if (!isValidEmailAddress(form.email))
     errors.email = "Enter a valid email address.";
   if (!form.tenantId.trim()) errors.tenantId = "Tenant ID is required.";
   else if (!/^[a-z0-9-]+$/.test(form.tenantId))

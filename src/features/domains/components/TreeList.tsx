@@ -52,6 +52,13 @@ function TreeItem({ node, level }: { node: DomainNode; level: number }) {
   const isSelected = selectedNodeId === node._id;
   const hasChildren = localNodes.some((n) => n.parentDomainId === node._id);
 
+  const handleSelectionKeyDown = (e: React.KeyboardEvent<HTMLDivElement>) => {
+    if (e.key === "Enter" || e.key === " ") {
+      e.preventDefault();
+      setSelectedNodeId(node._id);
+    }
+  };
+
   const handleDragStart = (e: React.DragEvent) => {
     e.dataTransfer.setData("domainId", node._id);
     e.stopPropagation();
@@ -90,35 +97,44 @@ function TreeItem({ node, level }: { node: DomainNode; level: number }) {
   return (
     <div className="w-full">
       <div
+        role="button"
+        tabIndex={0}
         draggable
         onDragStart={handleDragStart}
         onDrop={handleDrop}
         onDragOver={handleDragOver}
         onDragLeave={handleDragLeave}
         onClick={() => setSelectedNodeId(node._id)}
+        onKeyDown={handleSelectionKeyDown}
         className={`flex items-center p-2 rounded-md cursor-pointer transition-colors mt-1 ${
           isSelected
             ? "bg-accent/10 border border-accent/30"
             : "hover:bg-surface-2"
         }`}
         style={{ paddingLeft: `${level * 1.5 + 0.5}rem` }}
+        aria-pressed={isSelected}
+        aria-label={`Select domain ${node.domainName}`}
       >
-        <div
-          className="w-6 flex justify-center items-center"
+        <button
+          type="button"
           onClick={(e) => {
             e.stopPropagation();
             setIsOpen(!isOpen);
           }}
+          className="w-6 flex justify-center items-center text-text-muted transition-colors hover:text-text-primary"
+          aria-label={
+            isOpen ? "Collapse child domains" : "Expand child domains"
+          }
         >
           {hasChildren && (
             <motion.span
               animate={{ rotate: isOpen ? 90 : 0 }}
-              className="text-text-muted text-[10px] inline-block transform origin-center"
+              className="text-[10px] inline-block transform origin-center"
             >
               ▶
             </motion.span>
           )}
-        </div>
+        </button>
 
         <span className="text-sm font-medium text-text-primary mr-2">
           {node.domainName}

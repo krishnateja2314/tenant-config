@@ -9,6 +9,7 @@ interface ResizableLayoutProps {
 export function ResizableLayout({ leftPane, rightPane }: ResizableLayoutProps) {
   const { leftPaneWidth, setLeftPaneWidth } = useDomainWorkspaceStore();
   const isDragging = useRef(false);
+  const containerRef = useRef<HTMLDivElement>(null);
 
   const handleMouseDown = () => {
     isDragging.current = true;
@@ -23,12 +24,12 @@ export function ResizableLayout({ leftPane, rightPane }: ResizableLayoutProps) {
   };
 
   const handleMouseMove = (e: MouseEvent) => {
-    if (!isDragging.current) return;
+    if (!isDragging.current || !containerRef.current) return;
 
-    // Calculate new width as a percentage of the window
-    // Adjusting slightly for padding
-    const containerWidth = window.innerWidth - 256; // 256px is roughly the sidebar width
-    const newWidthPercentage = ((e.clientX - 256) / containerWidth) * 100;
+    const containerBounds = containerRef.current.getBoundingClientRect();
+    const containerWidth = containerBounds.width;
+    const pointerX = e.clientX - containerBounds.left;
+    const newWidthPercentage = (pointerX / containerWidth) * 100;
 
     // Constrain the resize between 20% and 80%
     if (newWidthPercentage >= 20 && newWidthPercentage <= 80) {
@@ -37,16 +38,19 @@ export function ResizableLayout({ leftPane, rightPane }: ResizableLayoutProps) {
   };
 
   useEffect(() => {
-    window.addEventListener("mousemove", handleMouseMove);
-    window.addEventListener("mouseup", handleMouseUp);
+    document.addEventListener("mousemove", handleMouseMove);
+    document.addEventListener("mouseup", handleMouseUp);
     return () => {
-      window.removeEventListener("mousemove", handleMouseMove);
-      window.removeEventListener("mouseup", handleMouseUp);
+      document.removeEventListener("mousemove", handleMouseMove);
+      document.removeEventListener("mouseup", handleMouseUp);
     };
   }, []);
 
   return (
-    <div className="flex w-full h-full overflow-hidden gap-2">
+    <div
+      ref={containerRef}
+      className="flex w-full h-full overflow-hidden gap-2"
+    >
       {/* LEFT PANE */}
       <div
         style={{ width: `${leftPaneWidth}%` }}

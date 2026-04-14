@@ -6,6 +6,7 @@ import { loginAdmin } from "../services/authApi";
 import { useAuthStore } from "../../../stores/auth.store";
 import { Input, Button, Alert } from "../../../shared/components";
 import { router } from "../../../config/routes";
+import { isValidEmailAddress } from "../../../utils/email";
 
 interface FormState {
   email: string;
@@ -20,7 +21,7 @@ interface FormErrors {
 function validate(form: FormState): FormErrors {
   const errors: FormErrors = {};
   if (!form.email.trim()) errors.email = "Email is required.";
-  else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email))
+  else if (!isValidEmailAddress(form.email))
     errors.email = "Enter a valid email address.";
   if (!form.password) errors.password = "Password is required.";
   else if (form.password.length < 6)

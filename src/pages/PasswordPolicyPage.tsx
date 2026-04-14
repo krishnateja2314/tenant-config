@@ -18,7 +18,7 @@ import {
 import { useState, useEffect } from "react";
 import { useSaveConfig } from "../features/auth-config/hooks/useSaveConfig";
 
-const PAGE: "password-policy" = "password-policy";
+const PAGE = "password-policy" as const;
 
 function NumericInput({
   label,
@@ -53,8 +53,8 @@ function NumericInput({
       setError("Must be a number.");
       return;
     }
-    const parsed = parseInt(str, 10);
-    if (isNaN(parsed)) {
+    const parsed = Number.parseInt(str, 10);
+    if (Number.isNaN(parsed)) {
       setError("Must be a number.");
       return;
     }

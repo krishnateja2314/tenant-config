@@ -1,4 +1,8 @@
-import { MailingList, CreateMailingListDTO, UpdateMailingListDTO } from "../types/mailingList.types";
+import {
+  MailingList,
+  CreateMailingListDTO,
+  UpdateMailingListDTO,
+} from "../types/mailingList.types";
 
 let mockMailingLists: MailingList[] = [
   {
@@ -20,22 +24,42 @@ let mockMailingLists: MailingList[] = [
     isActive: false,
     createdAt: new Date().toISOString(),
     updatedAt: new Date().toISOString(),
-  }
+  },
 ];
+
+const createMockMailingListId = () => {
+  const cryptoObj = globalThis.crypto || (globalThis as any).msCrypto;
+
+  if (typeof cryptoObj?.randomUUID === "function") {
+    return `ml-${cryptoObj.randomUUID()}`;
+  }
+
+  if (typeof cryptoObj?.getRandomValues === "function") {
+    const values = cryptoObj.getRandomValues(new Uint8Array(6));
+    return `ml-${Array.from(values)
+      .map((byte) => byte.toString(36).padStart(2, "0"))
+      .join("")}`;
+  }
+
+  return `ml-${Date.now().toString(36)}`;
+};
 
 const delay = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 
 export const mailingListApi = {
   getAll: async (tenantId: string): Promise<MailingList[]> => {
     await delay(600);
-    return mockMailingLists.filter(ml => ml.tenantId === tenantId);
+    return mockMailingLists.filter((ml) => ml.tenantId === tenantId);
   },
 
-  create: async (tenantId: string, data: CreateMailingListDTO): Promise<MailingList> => {
+  create: async (
+    tenantId: string,
+    data: CreateMailingListDTO,
+  ): Promise<MailingList> => {
     await delay(800);
     const newList: MailingList = {
       ...data,
-      _id: `ml-${Math.random().toString(36).substr(2, 9)}`,
+      _id: createMockMailingListId(),
       tenantId,
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
@@ -44,16 +68,23 @@ export const mailingListApi = {
     return newList;
   },
 
-  update: async (id: string, data: UpdateMailingListDTO): Promise<MailingList> => {
+  update: async (
+    id: string,
+    data: UpdateMailingListDTO,
+  ): Promise<MailingList> => {
     await delay(700);
-    const index = mockMailingLists.findIndex(ml => ml._id === id);
+    const index = mockMailingLists.findIndex((ml) => ml._id === id);
     if (index === -1) throw new Error("Not found");
-    mockMailingLists[index] = { ...mockMailingLists[index], ...data, updatedAt: new Date().toISOString() };
+    mockMailingLists[index] = {
+      ...mockMailingLists[index],
+      ...data,
+      updatedAt: new Date().toISOString(),
+    };
     return mockMailingLists[index];
   },
 
   delete: async (id: string): Promise<void> => {
     await delay(600);
-    mockMailingLists = mockMailingLists.filter(ml => ml._id !== id);
-  }
+    mockMailingLists = mockMailingLists.filter((ml) => ml._id !== id);
+  },
 };
