@@ -1,107 +1,95 @@
-# Tenant Configuration Control Panel — Sprint 2 Frontend
+# Tenant Configuration Control Panel - Frontend
 
-A full-featured React admin dashboard for tenant authentication configuration, built with:
-- **React 18** + **TypeScript**
-- **TanStack Router** — type-safe file-based routing
-- **TanStack Query** — server state, caching, mutation handling
-- **Zustand** — lightweight client state (auth + config)
-- **Framer Motion** — page + element animations
-- **Tailwind CSS** — utility-first styling with design tokens
-- **Syne + DM Sans** — display + body font pairing
+React + TypeScript admin UI for onboarding tenants, MFA login, and managing tenant/domain authentication configuration.
 
----
+## Stack
 
-## Project Structure
+- React 18 + TypeScript
+- Vite
+- TanStack Router
+- TanStack Query
+- Zustand
+- Tailwind CSS + PostCSS
+- Framer Motion
+- MUI + Emotion
 
-```
-src/
-├── adminSignUp/            # All login / MFA / signup pages & layout
-│   ├── AuthLayout.tsx      # Split-panel layout wrapper
-│   ├── LoginForm.tsx       # Step 1: password login
-│   ├── MFAVerifyForm.tsx   # Step 2: OTP verification
-│   └── SignupForm.tsx      # Admin account creation
-│
-├── authConfig/             # Configuration panel pages & layout
-│   ├── DashboardLayout.tsx # Protected layout (redirects if unauth)
-│   ├── Sidebar.tsx         # Nav sidebar with logout
-│   ├── AuthSettingsPage.tsx     # Main: enable/disable auth methods
-│   ├── PasswordPolicyPage.tsx   # Password complexity & expiry
-│   ├── SSOOTPPage.tsx           # SSO role mapping + OTP toggle
-│   └── SessionRulesPage.tsx     # Session timeout & lockout sliders
-│
-├── store/
-│   ├── auth.store.ts       # Auth state (Zustand, sessionStorage)
-│   └── authConfig.store.ts # Config state (Zustand, in-memory)
-│
-├── api/
-│   ├── auth.api.ts         # Placeholder: login, MFA, signup, logout
-│   └── authConfig.api.ts   # Placeholder: get/update auth config
-│
-├── components/
-│   └── ui.tsx              # Toggle, Input, Button, Card, Badge, Alert…
-│
-├── router.ts               # TanStack Router route tree
-├── App.tsx                 # QueryClient + RouterProvider
-├── main.tsx                # React DOM entry
-└── index.css               # Design tokens + Tailwind base
-```
+## Current Frontend Structure
 
----
+frontend/
+|- src/config/routes.tsx (route tree and guards)
+|- src/features/auth/ (login, signup, MFA forms + APIs)
+|- src/features/auth-config/ (tenant auth config state and APIs)
+|- src/features/domains/ (domain CRUD and related state)
+|- src/features/mailing-lists/ (mailing list UI/state)
+|- src/layouts/ (AuthLayout, DashboardLayout)
+|- src/pages/ (auth settings pages and central auth screens)
+|- src/shared/components/ (design system primitives)
+|- src/stores/auth.store.ts (auth session state)
 
-## Getting Started
+## Quick Start
+
+1) Install dependencies
 
 ```bash
 npm install
+```
+
+2) Configure frontend/.env
+
+```env
+VITE_API_BASE_URL=http://localhost:3001
+```
+
+3) Run development server
+
+```bash
 npm run dev
 ```
 
-The dev server starts at `http://localhost:5173`.
-API calls are proxied to `http://localhost:3001` add this to .env or link to your backend as VITE_API_BASE_URL.
+Frontend base URL: http://localhost:5173
 
----
+## Routes (Current)
 
-## MFA Login Flow
+### Public/Auth
 
+- /login
+- /signup
+- /verify-mfa
+- /auth-config-doc
+
+### Tenant-Facing Central Auth
+
+- /tenantconfig/auth/$tenantId
+- /tenantconfig/signup/$tenantId
+
+### Protected Dashboard
+
+- /auth-config
+- /auth-config/password-policy
+- /auth-config/sso-otp
+- /auth-config/session
+- /auth-config/domains
+- /auth-config/domain-auth
+- /auth-config/mailing-lists
+
+## Auth and Security Behavior
+
+- Login is two-step: password then OTP verification.
+- Guard logic redirects authenticated users away from login/signup and unauthenticated users away from protected pages.
+- Sensitive token handling remains backend cookie-based; frontend store keeps only non-sensitive session metadata.
+- API calls should be made with credentials enabled so cookie sessions persist.
+
+## Backend Integration Notes
+
+- Frontend expects backend on port 3001 by default.
+- Critical APIs used by UI include admin auth, auth-config, domains, domain-auth behavior, mailing-lists, and central-auth.
+- Ensure backend CORS includes frontend origin in ALLOWED_ORIGINS.
+
+## Build and Quality Commands
+
+```bash
+npm run dev
+npm run build
+npm run preview
+npm run lint
 ```
-/login  →  POST /api/admin/login
-           ↓ (success: requiresMFA=true, sessionToken)
-/verify-mfa  →  POST /api/admin/verify-mfa
-               ↓ (success: sets HttpOnly JWT cookie)
-/auth-config  (protected dashboard)
-```
-
-
----
-
-
-## Security Notes
-
-- **JWT storage**: HttpOnly cookie (set by backend — never stored in localStorage)
-- **Session storage**: Only non-sensitive admin profile is persisted (sessionStorage, clears on tab close)
-- **MFA**: Two-step flow — password → OTP; cannot skip to dashboard without completing both
-- **Route protection**: `DashboardLayout` checks `isAuthenticated` and redirects to `/login` if false
-- **CSP header**: Set in `index.html` (tighten for production)
-- **Cookies**: Backend must set `HttpOnly`, `Secure`, `SameSite=Strict` on the JWT cookie
-
----
-
-## Config Pages
-
-| Route | Page | REQ |
-|-------|------|-----|
-| `/auth-config` | Enable/disable Password, SSO, OTP, MFA | REQ-TC-1 |
-| `/auth-config/password-policy` | Complexity, expiry, lockout | REQ-TC-2 |
-| `/auth-config/sso-otp` | SSO role mapping, OTP toggle | REQ-TC-3 |
-| `/auth-config/session` | Session timeout, max attempts | REQ-TC-1, REQ-TC-2 |
-
----
-
-## Technology Decisions
-
-| Decision | Rationale |
-|----------|-----------|
-| TanStack Router | Type-safe, file-based routing; avoids class component patterns |
-| TanStack Query | Handles loading/error/cache for config fetches automatically |
-| Zustand | Minimal boilerplate; `persist` middleware with sessionStorage for auth |
-| Framer Motion | Smooth, production-grade animations without CSS gymnastics |
-| Tailwind + CSS vars | Design tokens in CSS, utility classes in JSX — easy to theme |
