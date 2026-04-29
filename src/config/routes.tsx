@@ -21,6 +21,7 @@ import { AuthConfigDoc } from "../pages/AuthConfigDoc";
 import { DomainConfigurationPage } from "../pages/DomainConfigurationPage";
 import { DomainAuthConfigPage } from "../pages/DomainAuthConfigPage";
 import { MailingListsPage } from "../pages/MailingListsPage"; // NEW IMPORT
+import { AcademicPoliciesPage } from "../pages/AcademicPoliciesPage";
 import { CentralAuthPage } from "../pages/CentralAuthPage";
 import { TenantSignupPage } from "../pages/TenantSignupPage";
 import { motion } from "framer-motion";
@@ -233,6 +234,13 @@ const mailingListsRoute = createRoute({
   component: MailingListsPage,
 });
 
+// NEW: Academic Policies Route
+const academicPoliciesRoute = createRoute({
+  getParentRoute: () => authConfigRoute,
+  path: "/academic-policies",
+  component: AcademicPoliciesPage,
+});
+
 // ── Index redirect ────────────────────────────────────────────────────────────
 const indexRoute = createRoute({
   getParentRoute: () => rootRoute,
@@ -266,6 +274,7 @@ const routeTree = rootRoute.addChildren([
     domainsRoute,
     domainAuthConfigRoute,
     mailingListsRoute,
+    academicPoliciesRoute,
   ]),
 ]);
 

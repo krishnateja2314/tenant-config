@@ -30,10 +30,16 @@ const NAV_ITEMS: {
     pageKey: "domain-auth-config",
   },
   {
-    label: "Mailing Lists", // NEW ITEM
+    label: "Mailing Lists",
     path: "/auth-config/mailing-lists",
     icon: "✉️",
     pageKey: "mailing-lists",
+  },
+  {
+    label: "Academic Policies",
+    path: "/auth-config/academic-policies",
+    icon: "📜",
+    pageKey: "academic-policies",
   },
   {
     label: "Auth Settings",
