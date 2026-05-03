@@ -42,9 +42,15 @@ const NAV_ITEMS: {
     pageKey: "academic-policies",
   },
   {
+    label: "Infrastructure",
+    path: "/auth-config/infrastructure",
+    icon: "⚙",
+    pageKey: "infrastructure",
+  },
+  {
     label: "Auth Settings",
     path: "/auth-config",
-    icon: "⚙",
+    icon: "🔐",
     pageKey: "auth-settings",
   },
   {

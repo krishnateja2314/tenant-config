@@ -22,6 +22,7 @@ import { DomainConfigurationPage } from "../pages/DomainConfigurationPage";
 import { DomainAuthConfigPage } from "../pages/DomainAuthConfigPage";
 import { MailingListsPage } from "../pages/MailingListsPage"; // NEW IMPORT
 import { AcademicPoliciesPage } from "../pages/AcademicPoliciesPage";
+import { InfrastructureAllocationPage } from "../pages/InfrastructureAllocationPage";
 import { CentralAuthPage } from "../pages/CentralAuthPage";
 import { TenantSignupPage } from "../pages/TenantSignupPage";
 import { motion } from "framer-motion";
@@ -241,6 +242,13 @@ const academicPoliciesRoute = createRoute({
   component: AcademicPoliciesPage,
 });
 
+// NEW: Infrastructure Allocation Route
+const infrastructureRoute = createRoute({
+  getParentRoute: () => authConfigRoute,
+  path: "/infrastructure",
+  component: InfrastructureAllocationPage,
+});
+
 // ── Index redirect ────────────────────────────────────────────────────────────
 const indexRoute = createRoute({
   getParentRoute: () => rootRoute,
@@ -275,6 +283,7 @@ const routeTree = rootRoute.addChildren([
     domainAuthConfigRoute,
     mailingListsRoute,
     academicPoliciesRoute,
+    infrastructureRoute,
   ]),
 ]);
 
