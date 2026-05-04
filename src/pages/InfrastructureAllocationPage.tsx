@@ -4,7 +4,13 @@ import { useAuthStore } from "../stores/auth.store";
 import { useInfrastructureStore } from "../features/infrastructure";
 import { AllocationForm, AllocationList } from "../features/infrastructure";
 import { Infrastructure } from "../features/infrastructure/types";
-import { Card } from "../shared/components";
+import { useDomains } from "../features/domains/hooks/useDomains";
+import { Card, Button } from "../shared/components";
+
+type PanelMode =
+  | { kind: "idle" }
+  | { kind: "edit"; infra: Infrastructure }
+  | { kind: "create"; domainId: string; domainName: string };
 
 export function InfrastructureAllocationPage() {
   const admin = useAuthStore((s) => s.admin);
@@ -19,9 +25,12 @@ export function InfrastructureAllocationPage() {
     clearError,
   } = useInfrastructureStore();
 
-  const [selectedInfra, setSelectedInfra] = useState<Infrastructure | null>(null);
+  const { treeQuery } = useDomains();
+
+  const [panel, setPanel] = useState<PanelMode>({ kind: "idle" });
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
+  const [showDomainPicker, setShowDomainPicker] = useState(false);
 
   // Fetch infrastructure allocations on mount or when tenantId changes
   useEffect(() => {
@@ -30,23 +39,58 @@ export function InfrastructureAllocationPage() {
     }
   }, [tenantId, fetchInfrastructureByTenant]);
 
+  // Domains that don't yet have an infrastructure allocation
+  const allocatedDomainIds = new Set(
+    infrastructures.map((i) => {
+      // domainId could be populated (object) or a plain string
+      return typeof i.domainId === "string"
+        ? i.domainId
+        : (i.domainId as any)?._id || i.domainId;
+    })
+  );
+
+  const availableDomains = (treeQuery.data ?? []).filter(
+    (d) => !allocatedDomainIds.has(d._id)
+  );
+
+  const handleEdit = (infra: Infrastructure) => {
+    setPanel({ kind: "edit", infra });
+    setShowDomainPicker(false);
+  };
+
+  const handleCreate = (domainId: string, domainName: string) => {
+    setPanel({ kind: "create", domainId, domainName });
+    setShowDomainPicker(false);
+  };
+
   const handleSubmit = async (data: Record<string, unknown>) => {
-    if (!selectedInfra) return;
+    let targetDomainId: string;
+    if (panel.kind === "edit") {
+      const raw = panel.infra.domainId;
+      targetDomainId = typeof raw === "string" ? raw : (raw as any)?._id || raw;
+    } else if (panel.kind === "create") {
+      targetDomainId = panel.domainId;
+    } else {
+      return;
+    }
 
     setIsSubmitting(true);
     try {
-      await updateInfrastructure(selectedInfra.domainId, data);
-      setSuccessMessage("Infrastructure allocation updated successfully!");
-      setSelectedInfra(null);
+      await updateInfrastructure(targetDomainId, data);
+      const verb = panel.kind === "create" ? "created" : "updated";
+      setSuccessMessage(`Infrastructure allocation ${verb} successfully!`);
+      setPanel({ kind: "idle" });
       // Refresh data
       if (tenantId) fetchInfrastructureByTenant(tenantId);
       setTimeout(() => setSuccessMessage(null), 3000);
     } catch (err) {
-      console.error("Error updating infrastructure:", err);
+      console.error("Error saving infrastructure:", err);
     } finally {
       setIsSubmitting(false);
     }
   };
+
+  const panelOpen = panel.kind !== "idle";
 
   return (
     <motion.div
@@ -56,16 +100,94 @@ export function InfrastructureAllocationPage() {
       className="p-8 max-w-7xl mx-auto space-y-6"
     >
       {/* Page Header */}
-      <div className="space-y-2">
-        <h1 className="text-3xl font-black text-text-primary tracking-tight">
-          Infrastructure Allocation
-        </h1>
-        <p className="text-sm text-text-muted max-w-2xl">
-          Manage computational and digital infrastructure resources across
-          domains — including storage quotas, compute limits, and lab system
-          access rights.
-        </p>
+      <div className="flex items-start justify-between">
+        <div className="space-y-2">
+          <h1 className="text-3xl font-black text-text-primary tracking-tight">
+            Infrastructure Allocation
+          </h1>
+          <p className="text-sm text-text-muted max-w-2xl">
+            Manage computational and digital infrastructure resources across
+            domains — including storage quotas, compute limits, and lab system
+            access rights.
+          </p>
+        </div>
+
+        {/* New Allocation Button */}
+        <div className="relative flex-shrink-0">
+          <Button
+            variant="primary"
+            onClick={() => setShowDomainPicker((v) => !v)}
+            disabled={availableDomains.length === 0 && !treeQuery.isLoading}
+          >
+            + New Allocation
+          </Button>
+
+          {/* Domain Picker Dropdown */}
+          <AnimatePresence>
+            {showDomainPicker && (
+              <motion.div
+                initial={{ opacity: 0, y: -8, scale: 0.95 }}
+                animate={{ opacity: 1, y: 0, scale: 1 }}
+                exit={{ opacity: 0, y: -8, scale: 0.95 }}
+                transition={{ duration: 0.15 }}
+                className="absolute right-0 top-full mt-2 w-72 bg-surface border border-border rounded-2xl shadow-xl z-50 overflow-hidden"
+              >
+                <div className="p-3 border-b border-border">
+                  <p className="text-xs font-semibold text-text-primary">
+                    Select a domain
+                  </p>
+                  <p className="text-[10px] text-text-muted mt-0.5">
+                    Only domains without an existing allocation are shown
+                  </p>
+                </div>
+                <div className="max-h-60 overflow-y-auto">
+                  {treeQuery.isLoading ? (
+                    <div className="flex justify-center p-6">
+                      <span className="w-5 h-5 border-2 border-accent border-t-transparent rounded-full animate-spin" />
+                    </div>
+                  ) : availableDomains.length === 0 ? (
+                    <div className="p-4 text-center">
+                      <p className="text-xs text-text-muted">
+                        All domains already have allocations
+                      </p>
+                    </div>
+                  ) : (
+                    availableDomains.map((domain) => (
+                      <button
+                        key={domain._id}
+                        onClick={() =>
+                          handleCreate(domain._id, domain.domainName)
+                        }
+                        className="w-full text-left px-4 py-3 text-sm text-text-primary hover:bg-surface-2 transition-colors flex items-center gap-3 border-b border-border/50 last:border-0"
+                      >
+                        <span className="w-7 h-7 rounded-lg bg-accent/10 flex items-center justify-center flex-shrink-0">
+                          <span className="text-xs">🏢</span>
+                        </span>
+                        <div className="min-w-0">
+                          <p className="font-medium truncate">
+                            {domain.domainName}
+                          </p>
+                          <p className="text-[10px] text-text-muted">
+                            {domain.metadata?.domainType || "DOMAIN"}
+                          </p>
+                        </div>
+                      </button>
+                    ))
+                  )}
+                </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
+        </div>
       </div>
+
+      {/* Close dropdown on outside click */}
+      {showDomainPicker && (
+        <div
+          className="fixed inset-0 z-40"
+          onClick={() => setShowDomainPicker(false)}
+        />
+      )}
 
       {/* Overview Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
@@ -184,7 +306,7 @@ export function InfrastructureAllocationPage() {
       {/* Main Content */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* List of Allocations */}
-        <div className={selectedInfra ? "lg:col-span-2" : "lg:col-span-3"}>
+        <div className={panelOpen ? "lg:col-span-2" : "lg:col-span-3"}>
           <div className="space-y-4">
             <div className="flex items-center justify-between">
               <h2 className="text-base font-bold text-text-primary">
@@ -193,15 +315,15 @@ export function InfrastructureAllocationPage() {
             </div>
             <AllocationList
               infrastructures={infrastructures}
-              onEdit={setSelectedInfra}
+              onEdit={handleEdit}
               loading={loading}
             />
           </div>
         </div>
 
-        {/* Edit Panel */}
+        {/* Side Panel (Edit or Create) */}
         <AnimatePresence mode="wait">
-          {selectedInfra && (
+          {panel.kind === "edit" && (
             <motion.div
               key="edit-panel"
               initial={{ opacity: 0, x: 24 }}
@@ -216,7 +338,7 @@ export function InfrastructureAllocationPage() {
                     Edit Allocation
                   </h2>
                   <button
-                    onClick={() => setSelectedInfra(null)}
+                    onClick={() => setPanel({ kind: "idle" })}
                     className="w-8 h-8 flex items-center justify-center rounded-lg text-text-muted hover:text-text-primary hover:bg-surface-2 transition-all duration-150"
                   >
                     ✕
@@ -224,14 +346,50 @@ export function InfrastructureAllocationPage() {
                 </div>
                 <AllocationForm
                   domain={{
-                    _id: selectedInfra.domainId,
+                    _id:
+                      typeof panel.infra.domainId === "string"
+                        ? panel.infra.domainId
+                        : (panel.infra.domainId as any)?._id,
                     domainName:
-                      typeof selectedInfra.domainId === "string"
-                        ? selectedInfra.domainId
-                        : (selectedInfra.domainId as any)?.domainName ||
+                      typeof panel.infra.domainId === "string"
+                        ? panel.infra.domainId
+                        : (panel.infra.domainId as any)?.domainName ||
                           "Unknown",
                   }}
-                  infrastructure={selectedInfra}
+                  infrastructure={panel.infra}
+                  onSubmit={handleSubmit}
+                  loading={isSubmitting}
+                />
+              </div>
+            </motion.div>
+          )}
+
+          {panel.kind === "create" && (
+            <motion.div
+              key="create-panel"
+              initial={{ opacity: 0, x: 24 }}
+              animate={{ opacity: 1, x: 0 }}
+              exit={{ opacity: 0, x: 24 }}
+              transition={{ duration: 0.25 }}
+              className="lg:col-span-1"
+            >
+              <div className="sticky top-8 space-y-4">
+                <div className="flex justify-between items-center">
+                  <h2 className="text-base font-bold text-text-primary">
+                    New Allocation
+                  </h2>
+                  <button
+                    onClick={() => setPanel({ kind: "idle" })}
+                    className="w-8 h-8 flex items-center justify-center rounded-lg text-text-muted hover:text-text-primary hover:bg-surface-2 transition-all duration-150"
+                  >
+                    ✕
+                  </button>
+                </div>
+                <AllocationForm
+                  domain={{
+                    _id: panel.domainId,
+                    domainName: panel.domainName,
+                  }}
                   onSubmit={handleSubmit}
                   loading={isSubmitting}
                 />
