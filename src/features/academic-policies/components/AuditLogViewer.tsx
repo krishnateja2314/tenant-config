@@ -3,13 +3,14 @@ import { useAuthStore } from "../../../stores/auth.store";
 import { academicPolicyApi } from "../services/academicPolicyApi";
 import { AuditLog, AuditLogStats } from "../types/academicPolicy.types";
 import { Card, Badge, Alert, Button } from "../../../shared/components";
+import { useErrorMessage } from "../../../hooks/useErrorMessage";
 
 export const AuditLogViewer = () => {
   const admin = useAuthStore((s) => s.admin);
   const [logs, setLogs] = useState<AuditLog[]>([]);
   const [stats, setStats] = useState<AuditLogStats | null>(null);
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const { error, setError } = useErrorMessage();
   const [filterDecision, setFilterDecision] = useState<
     "" | "ALLOWED" | "DENIED"
   >("");
@@ -99,15 +100,15 @@ export const AuditLogViewer = () => {
             </p>
           </Card>
           <Card title="Allowed">
-            <p className="text-3xl font-bold text-emerald-600">
+            <p className="text-3xl font-bold text-emerald-400">
               {stats.allowed}
             </p>
           </Card>
           <Card title="Denied">
-            <p className="text-3xl font-bold text-rose-600">{stats.denied}</p>
+            <p className="text-3xl font-bold text-rose-400">{stats.denied}</p>
           </Card>
           <Card title="Denial Rate">
-            <p className="text-3xl font-bold text-amber-500">
+            <p className="text-3xl font-bold text-amber-400">
               {stats.denialRate}%
             </p>
           </Card>
@@ -125,7 +126,7 @@ export const AuditLogViewer = () => {
             </label>
             <input
               type="text"
-              placeholder="Enter student ID"
+              placeholder="Enter Student ID or User Name"
               value={filterStudentId}
               onChange={(e) => setFilterStudentId(e.target.value)}
               className="w-full rounded-xl border border-border bg-surface px-4 py-3 text-sm text-text-primary outline-none transition focus:border-accent focus:ring-2 focus:ring-accent/20"
@@ -178,7 +179,7 @@ export const AuditLogViewer = () => {
               <thead className="bg-surface-2 text-left text-xs uppercase text-text-muted tracking-widest">
                 <tr>
                   <th className="px-4 py-3">Timestamp</th>
-                  <th className="px-4 py-3">Student ID</th>
+                  <th className="px-4 py-3">User / Student</th>
                   <th className="px-4 py-3">Action</th>
                   <th className="px-4 py-3">Attendance</th>
                   <th className="px-4 py-3">Required</th>
@@ -195,27 +196,40 @@ export const AuditLogViewer = () => {
                       {formatDate(log.timestamp)}
                     </td>
                     <td className="px-4 py-4 text-text-primary font-medium">
-                      {log.studentId}
+                      {log.userId?.name || log.studentId || "Unknown User"}
+                      {log.userId?.email && (
+                        <div className="text-xs text-text-muted font-normal mt-1">
+                          {log.userId.email}
+                        </div>
+                      )}
                     </td>
                     <td className="px-4 py-4 text-text-muted">{log.action}</td>
                     <td className="px-4 py-4">
-                      <span
-                        className={`font-semibold ${
-                          log.actualAttendance >= log.requiredThreshold
-                            ? "text-emerald-600"
-                            : "text-rose-600"
-                        }`}
-                      >
-                        {log.actualAttendance}%
-                      </span>
+                      {log.actualAttendance !== undefined ? (
+                        <span
+                          className={`font-semibold ${
+                            log.actualAttendance >= (log.requiredThreshold || 0)
+                              ? "text-emerald-400"
+                              : "text-rose-400"
+                          }`}
+                        >
+                          {log.actualAttendance}%
+                        </span>
+                      ) : (
+                        <span className="text-text-muted italic">N/A</span>
+                      )}
                     </td>
                     <td className="px-4 py-4 text-text-muted">
-                      {log.requiredThreshold}%
+                      {log.requiredThreshold !== undefined ? `${log.requiredThreshold}%` : "N/A"}
                     </td>
                     <td className="px-4 py-4">
-                      <Badge variant={getDecisionColor(log.decision)}>
-                        {log.decision}
-                      </Badge>
+                      {log.decision ? (
+                        <Badge variant={getDecisionColor(log.decision)}>
+                          {log.decision}
+                        </Badge>
+                      ) : (
+                        <span className="text-text-muted italic">N/A</span>
+                      )}
                     </td>
                   </tr>
                 ))}

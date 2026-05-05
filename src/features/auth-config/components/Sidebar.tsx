@@ -42,6 +42,12 @@ const NAV_ITEMS: {
     pageKey: "academic-policies",
   },
   {
+    label: "Attendance Events",
+    path: "/auth-config/attendance-events",
+    icon: "🗓",
+    pageKey: "attendance-events",
+  },
+  {
     label: "Infrastructure",
     path: "/auth-config/infrastructure",
     icon: "⚙",

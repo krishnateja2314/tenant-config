@@ -39,6 +39,11 @@ export interface AuditLog {
   _id: string;
   tenantId: string;
   studentId: string;
+  userId?: {
+    _id: string;
+    name: string;
+    email: string;
+  };
   domainId: string;
   policyId: string;
   action: string;

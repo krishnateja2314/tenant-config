@@ -87,6 +87,7 @@ export async function identifyUser(
   try {
     const response = await fetch(`${API_BASE_URL}/api/central-auth/identify`, {
       method: "POST",
+      credentials: "include",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(payload),
     });
@@ -108,6 +109,9 @@ export async function getAuthConfig(
 
     const response = await fetch(
       `${API_BASE_URL}/api/central-auth/config?${query.toString()}`,
+      {
+        credentials: "include",
+      }
     );
     return (await response.json()) as IdentifyResponse;
   } catch (error) {
@@ -119,6 +123,7 @@ export async function loginUser(payload: LoginPayload): Promise<LoginResponse> {
   try {
     const response = await fetch(`${API_BASE_URL}/api/central-auth/login`, {
       method: "POST",
+      credentials: "include",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(payload),
     });
@@ -136,6 +141,7 @@ export async function verifyOtp(
       `${API_BASE_URL}/api/central-auth/verify-otp`,
       {
         method: "POST",
+        credentials: "include",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload),
       },
@@ -160,6 +166,7 @@ export async function verifyTotp(
       `${API_BASE_URL}/api/central-auth/verify-totp`,
       {
         method: "POST",
+        credentials: "include",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload),
       },
@@ -183,6 +190,7 @@ export async function signupUser(
   try {
     const response = await fetch(`${API_BASE_URL}/api/central-auth/signup`, {
       method: "POST",
+      credentials: "include",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(payload),
     });

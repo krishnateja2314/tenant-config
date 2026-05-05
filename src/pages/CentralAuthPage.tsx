@@ -9,6 +9,7 @@ import {
   verifyOtp,
   verifyTotp,
 } from "../features/auth/services/centralAuthApi";
+import { useErrorMessage } from "../hooks/useErrorMessage";
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "";
 
@@ -23,7 +24,7 @@ export function CentralAuthPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [otp, setOtp] = useState("");
-  const [error, setError] = useState<string | null>(null);
+  const { error, setError } = useErrorMessage();
   const [info, setInfo] = useState<string | null>(null);
   const [sessionToken, setSessionToken] = useState<string | null>(null);
   const [authConfig, setAuthConfig] = useState<any>(null);

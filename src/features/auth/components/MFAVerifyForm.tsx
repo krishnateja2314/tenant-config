@@ -5,6 +5,7 @@ import { useMutation } from "@tanstack/react-query";
 import { verifyMFA, resendOTP } from "../services/authApi";
 import { useAuthStore } from "../../../stores/auth.store";
 import { Button, Alert } from "../../../shared/components";
+import { useErrorMessage } from "../../../hooks/useErrorMessage";
 
 const OTP_LENGTH = 6;
 const createEmptyOtp = () => Array.from({ length: OTP_LENGTH }, () => "");
@@ -21,7 +22,7 @@ export function MFAVerifyForm() {
     }));
 
   const [otp, setOtp] = useState<string[]>(createEmptyOtp());
-  const [serverError, setServerError] = useState<string | null>(null);
+  const { error: serverError, setError: setServerError } = useErrorMessage();
   const [resendSuccess, setResendSuccess] = useState(false);
   const [resendCooldown, setResendCooldown] = useState(0);
   const inputRefs = useRef<(HTMLInputElement | null)[]>([]);

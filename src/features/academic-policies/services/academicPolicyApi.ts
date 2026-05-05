@@ -8,6 +8,40 @@ import {
 
 const API_BASE = import.meta.env.VITE_API_URL || "http://localhost:3001/api";
 
+const parseApiResponse = async (response: Response) => {
+  const text = await response.text();
+  let payload: any = null;
+
+  try {
+    payload = text ? JSON.parse(text) : null;
+  } catch {
+    payload = null;
+  }
+
+  if (!response.ok) {
+    const serverMessage =
+      payload?.message ||
+      payload?.error ||
+      payload?.errors?.[0]?.message ||
+      response.statusText;
+    throw new Error(`${serverMessage || "Server error"} (${response.status})`);
+  }
+
+  return payload;
+};
+
+const normalizePolicyDomainId = (policy: any) => {
+  const domainId = policy.domainId;
+
+  return {
+    ...policy,
+    domainId:
+      domainId && typeof domainId === "object"
+        ? domainId._id || null
+        : domainId || null,
+  };
+};
+
 export const academicPolicyApi = {
   // ── Academic Policy Management ──
   getPolicies: async (tenantId: string): Promise<AcademicPolicy[]> => {
@@ -19,12 +53,8 @@ export const academicPolicyApi = {
       },
     });
 
-    if (!response.ok) {
-      throw new Error(`Failed to fetch policies: ${response.statusText}`);
-    }
-
-    const data = await response.json();
-    return data.data || [];
+    const data = await parseApiResponse(response);
+    return (data?.data || []).map(normalizePolicyDomainId);
   },
 
   resolveEffectivePolicy: async (
@@ -42,11 +72,7 @@ export const academicPolicyApi = {
       },
     );
 
-    if (!response.ok) {
-      throw new Error(`Failed to resolve policy: ${response.statusText}`);
-    }
-
-    const data = await response.json();
+    const data = await parseApiResponse(response);
     return data.data;
   },
 
@@ -54,21 +80,22 @@ export const academicPolicyApi = {
     tenantId: string,
     policy: CreatePolicyDTO,
   ): Promise<AcademicPolicy> => {
+    const payload = {
+      ...policy,
+      domainId: policy.domainId || null,
+    };
+
     const response = await fetch(`${API_BASE}/academic-policies/${tenantId}`, {
       method: "POST",
       credentials: "include",
       headers: {
         "Content-Type": "application/json",
       },
-      body: JSON.stringify(policy),
+      body: JSON.stringify(payload),
     });
 
-    if (!response.ok) {
-      throw new Error(`Failed to create policy: ${response.statusText}`);
-    }
-
-    const data = await response.json();
-    return data.data;
+    const data = await parseApiResponse(response);
+    return normalizePolicyDomainId(data.data);
   },
 
   updatePolicy: async (
@@ -76,21 +103,22 @@ export const academicPolicyApi = {
     policy: CreatePolicyDTO & { _id: string },
   ): Promise<AcademicPolicy> => {
     const { _id, ...policyData } = policy;
+    const payload = {
+      ...policyData,
+      domainId: policyData.domainId || null,
+    };
+
     const response = await fetch(`${API_BASE}/academic-policies/${tenantId}`, {
       method: "POST",
       credentials: "include",
       headers: {
         "Content-Type": "application/json",
       },
-      body: JSON.stringify(policyData),
+      body: JSON.stringify(payload),
     });
 
-    if (!response.ok) {
-      throw new Error(`Failed to update policy: ${response.statusText}`);
-    }
-
-    const data = await response.json();
-    return data.data;
+    const data = await parseApiResponse(response);
+    return normalizePolicyDomainId(data.data);
   },
 
   deletePolicy: async (tenantId: string, policyId: string): Promise<void> => {
@@ -105,9 +133,7 @@ export const academicPolicyApi = {
       },
     );
 
-    if (!response.ok) {
-      throw new Error(`Failed to delete policy: ${response.statusText}`);
-    }
+    await parseApiResponse(response);
   },
 
   // ── Audit Log Management ──

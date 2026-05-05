@@ -1,16 +1,27 @@
-import React, { useEffect, useState } from "react";
-import { motion } from "framer-motion";
-import PolicyManager from "../features/academic-policies/components/PolicyManager";
-import AuditLogViewer from "../features/academic-policies/components/AuditLogViewer";
-import { Card, Button } from "../shared/components";
+import { useEffect, useState } from "react";
+import { useNavigate } from "@tanstack/react-router";
+import { Button, Card, Alert, Spinner } from "../shared/components";
+import { useAttendanceStore } from "../features/attendance/stores/attendance.store";
+import { useAuthStore } from "../stores/auth.store";
+import EventCreationForm from "../features/attendance/components/EventCreationForm";
+import EventList from "../features/attendance/components/EventList";
+import CSVUploadForm from "../features/attendance/components/CSVUploadForm";
 import { useDomains } from "../features/domains/hooks/useDomains";
 import { useDomainWorkspaceStore } from "../features/domains/stores/domain.store";
 import { TreeList } from "../features/domains/components/TreeList";
 import { TreeCanvas } from "../features/domains/components/TreeCanvas";
 import { ResizableLayout } from "../features/domains/components/ResizableLayout";
+import { useErrorMessage } from "../hooks/useErrorMessage";
 
-export const AcademicPoliciesPage = () => {
-  const [activeTab, setActiveTab] = useState<"policies" | "audit">("policies");
+export default function AttendanceEventsPage() {
+  const admin = useAuthStore((state) => state.admin);
+  const { events, loading, fetchEvents, deleteEvent } = useAttendanceStore();
+  const { error, setError } = useErrorMessage();
+  const navigate = useNavigate();
+  const [activeTab, setActiveTab] = useState<"list" | "create" | "import">(
+    "list",
+  );
+
   const { treeQuery } = useDomains();
   const {
     localNodes,
@@ -31,6 +42,36 @@ export const AcademicPoliciesPage = () => {
     }
   }, [treeQuery.data, initWorkspace]);
 
+  useEffect(() => {
+    const checkAuth = async () => {
+      if (!admin) {
+        navigate({ to: "/login" });
+        return;
+      }
+
+      if (admin.role !== "TENANT_ADMIN") {
+        navigate({ to: "/auth-config" });
+        return;
+      }
+    };
+
+    checkAuth();
+  }, [admin, navigate]);
+
+  useEffect(() => {
+    if (admin?.tenantId) {
+      fetchEvents(admin.tenantId);
+    }
+  }, [admin?.tenantId, fetchEvents]);
+
+  if (!admin) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <Spinner />
+      </div>
+    );
+  }
+
   const leftPane = (
     <Card className="h-full flex flex-col overflow-hidden p-0">
       <div className="flex justify-between items-center p-4 border-b border-border z-10 bg-surface">
@@ -39,7 +80,7 @@ export const AcademicPoliciesPage = () => {
             Domain Structure
           </h3>
           <p className="text-xs text-text-muted mt-1">
-            Review domain policies while configuring attendance enforcement.
+            View domains while configuring attendance events.
           </p>
         </div>
 
@@ -68,7 +109,9 @@ export const AcademicPoliciesPage = () => {
       </div>
 
       <div
-        className={`flex-1 overflow-hidden relative ${viewMode === "list" ? "p-4 overflow-y-auto" : ""}`}
+        className={`flex-1 overflow-hidden relative ${
+          viewMode === "list" ? "p-4 overflow-y-auto" : ""
+        }`}
       >
         {treeQuery.isLoading ? (
           <div className="flex justify-center p-8">
@@ -82,7 +125,9 @@ export const AcademicPoliciesPage = () => {
           )
         ) : (
           <div className="h-full flex flex-col items-center justify-center text-center p-4">
-            <p className="text-sm text-gray-500">No domain structure loaded.</p>
+            <p className="text-sm text-text-muted">
+              No domain structure loaded.
+            </p>
           </div>
         )}
       </div>
@@ -90,15 +135,15 @@ export const AcademicPoliciesPage = () => {
   );
 
   const rightPane = (
-    <Card className="h-full overflow-hidden shadow-sm">
-      <div className="h-full flex flex-col">
-        <div className="flex items-center justify-between gap-4 bg-surface border-b border-border p-5">
+    <div className="h-full flex flex-col overflow-hidden">
+      <div className="flex-1 overflow-y-auto space-y-6 p-6">
+        <div className="flex items-center justify-between gap-4 bg-surface border border-border rounded-xl p-4">
           <div>
             <h1 className="text-2xl font-semibold text-text-primary">
-              Academic Policy Enforcement
+              Attendance Events
             </h1>
-            <p className="text-sm text-text-muted mt-1">
-              Configure tenant and domain-level attendance policies.
+            <p className="text-sm text-text-muted">
+              Create and manage attendance events for your tenant.
             </p>
           </div>
 
@@ -130,42 +175,47 @@ export const AcademicPoliciesPage = () => {
           </div>
         </div>
 
-        <div className="border-b border-border p-4">
-          <button
-            onClick={() => setActiveTab("policies")}
-            className={`pb-3 mr-6 text-sm font-semibold transition ${
-              activeTab === "policies"
-                ? "border-b-2 border-accent text-accent"
-                : "border-b-2 border-transparent text-text-muted hover:text-text-primary"
-            }`}
-          >
-            Policy Manager
-          </button>
-          <button
-            onClick={() => setActiveTab("audit")}
-            className={`pb-3 text-sm font-semibold transition ${
-              activeTab === "audit"
-                ? "border-b-2 border-accent text-accent"
-                : "border-b-2 border-transparent text-text-muted hover:text-text-primary"
-            }`}
-          >
-            Audit Logs & Statistics
-          </button>
+        {error && <Alert type="error" message={error} />}
+
+        <div className="border-b border-border">
+          <nav className="flex space-x-8" aria-label="Tabs">
+            {(["list", "create", "import"] as const).map((tab) => (
+              <button
+                key={tab}
+                onClick={() => setActiveTab(tab)}
+                className={`py-4 px-1 border-b-2 font-medium text-sm ${
+                  activeTab === tab
+                    ? "border-accent text-accent"
+                    : "border-transparent text-text-muted hover:text-text-primary hover:border-border"
+                }`}
+              >
+                {tab === "list"
+                  ? "Events"
+                  : tab === "create"
+                    ? "Create Event"
+                    : "Import CSV"}
+              </button>
+            ))}
+          </nav>
         </div>
 
-        <div className="flex-1 overflow-y-auto p-6">
-          <motion.div
-            key={activeTab}
-            initial={{ opacity: 0, x: 20 }}
-            animate={{ opacity: 1, x: 0 }}
-            transition={{ duration: 0.2 }}
-          >
-            {activeTab === "policies" && <PolicyManager />}
-            {activeTab === "audit" && <AuditLogViewer />}
-          </motion.div>
-        </div>
+        {loading && activeTab === "list" ? (
+          <div className="flex items-center justify-center py-12">
+            <Spinner />
+          </div>
+        ) : activeTab === "list" ? (
+          <EventList
+            events={events}
+            tenantId={admin.tenantId}
+            onDeleteEvent={(eventId) => deleteEvent(admin.tenantId, eventId)}
+          />
+        ) : activeTab === "create" ? (
+          <EventCreationForm tenantId={admin.tenantId} />
+        ) : (
+          <CSVUploadForm tenantId={admin.tenantId} events={events} />
+        )}
       </div>
-    </Card>
+    </div>
   );
 
   return (
@@ -175,6 +225,4 @@ export const AcademicPoliciesPage = () => {
       </div>
     </div>
   );
-};
-
-export default AcademicPoliciesPage;
+}

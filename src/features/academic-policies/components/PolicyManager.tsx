@@ -5,9 +5,16 @@ import { useDomains } from "../../domains/hooks/useDomains";
 import { AcademicPolicy, CreatePolicyDTO } from "../types/academicPolicy.types";
 import { Card, Button, Input, Alert, Badge } from "../../../shared/components";
 import { Plus, Trash2 } from "lucide-react";
+import { useErrorMessage } from "../../../hooks/useErrorMessage";
 
 const MIN_THRESHOLD = 0;
 const MAX_THRESHOLD = 100;
+
+const normalizePolicyDomainId = (domainId: any): string | null => {
+  if (!domainId) return null;
+  if (typeof domainId === "string") return domainId;
+  return domainId._id ? String(domainId._id) : null;
+};
 
 export const PolicyManager = () => {
   const admin = useAuthStore((s) => s.admin);
@@ -15,15 +22,14 @@ export const PolicyManager = () => {
     policies,
     selectedPolicy,
     loading,
-    error,
     isSaving,
     fetchPolicies,
     selectPolicy,
     createPolicy,
     updatePolicy,
     deletePolicy,
-    clearError,
   } = usePolicyStore();
+  const { error, setError } = useErrorMessage();
 
   const { treeQuery } = useDomains();
   const [formData, setFormData] = useState<CreatePolicyDTO>({
@@ -49,7 +55,7 @@ export const PolicyManager = () => {
   const handleSelectPolicy = (policy: AcademicPolicy) => {
     selectPolicy(policy);
     setFormData({
-      domainId: policy.domainId,
+      domainId: normalizePolicyDomainId(policy.domainId),
       threshold: policy.threshold,
       policyType: policy.policyType,
       isHardConstraint: policy.isHardConstraint,
@@ -108,8 +114,10 @@ export const PolicyManager = () => {
 
   const getDomainName = (domainId: string | null): string => {
     if (!domainId) return "Tenant Level";
-    const domain = treeQuery.data?.find((d: any) => d._id === domainId);
-    return domain?.domainName || domainId;
+
+    const resolvedId = normalizePolicyDomainId(domainId);
+    const domain = treeQuery.data?.find((d: any) => d._id === resolvedId);
+    return domain?.domainName || resolvedId || "Unknown Domain";
   };
 
   return (
@@ -133,11 +141,7 @@ export const PolicyManager = () => {
         </div>
       </Card>
 
-      {error && (
-        <Alert variant="error" onDismiss={clearError}>
-          {error}
-        </Alert>
-      )}
+      {error && <Alert type="error" message={error} />}
 
       <div className="grid grid-cols-1 lg:grid-cols-[1.8fr_1.2fr] gap-6">
         <Card

@@ -7,6 +7,7 @@ import { useAuthStore } from "../../../stores/auth.store";
 import { Input, Button, Alert } from "../../../shared/components";
 import { router } from "../../../config/routes";
 import { isValidEmailAddress } from "../../../utils/email";
+import { useErrorMessage } from "../../../hooks/useErrorMessage";
 
 interface FormState {
   email: string;
@@ -35,7 +36,7 @@ export function LoginForm() {
 
   const [form, setForm] = useState<FormState>({ email: "", password: "" });
   const [errors, setErrors] = useState<FormErrors>({});
-  const [serverError, setServerError] = useState<string | null>(null);
+  const { error: serverError, setError: setServerError } = useErrorMessage();
 
   const mutation = useMutation({
     mutationFn: loginAdmin,

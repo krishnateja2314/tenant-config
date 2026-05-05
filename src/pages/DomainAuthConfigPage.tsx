@@ -17,6 +17,7 @@ import {
   validateAuthConfig,
   type AuthConfigPayload,
 } from "../features/auth-config/services/authConfigApi";
+import { useErrorMessage } from "../hooks/useErrorMessage";
 
 type SaveMessage = { type: "success" | "error"; text: string } | null;
 
@@ -32,7 +33,10 @@ function DomainTreePicker({
   onSelect: (domainId: string) => void;
 }) {
   const localNodes = useDomainWorkspaceStore((s) => s.localNodes);
-  const nodeIds = useMemo(() => new Set(localNodes.map((node) => node._id)), [localNodes]);
+  const nodeIds = useMemo(
+    () => new Set(localNodes.map((node) => node._id)),
+    [localNodes],
+  );
 
   const children = localNodes.filter((node) => {
     if (parentId !== null) {
@@ -133,7 +137,9 @@ export function DomainAuthConfigPage() {
 
       const validation = await validateAuthConfig(formState);
       if (!validation.success || !validation.data?.valid) {
-        throw new Error(validation.data?.errors?.[0] || "Configuration validation failed.");
+        throw new Error(
+          validation.data?.errors?.[0] || "Configuration validation failed.",
+        );
       }
 
       return updateAuthConfig(tenantId, formState, selectedDomainId);
@@ -142,13 +148,18 @@ export function DomainAuthConfigPage() {
       if (res.success) {
         setMessage({ type: "success", text: "Domain auth config saved." });
         setIsDirty(false);
-        queryClient.invalidateQueries({ queryKey: ["auth-config", tenantId, "domain", selectedDomainId] });
+        queryClient.invalidateQueries({
+          queryKey: ["auth-config", tenantId, "domain", selectedDomainId],
+        });
       } else {
         setMessage({ type: "error", text: res.message });
       }
     },
     onError: (error) => {
-      setMessage({ type: "error", text: (error as Error).message || "Failed to save." });
+      setMessage({
+        type: "error",
+        text: (error as Error).message || "Failed to save.",
+      });
     },
   });
 
@@ -173,7 +184,10 @@ export function DomainAuthConfigPage() {
       }
     },
     onError: (error) => {
-      setMessage({ type: "error", text: (error as Error).message || "Cascade failed." });
+      setMessage({
+        type: "error",
+        text: (error as Error).message || "Cascade failed.",
+      });
     },
   });
 
@@ -210,7 +224,9 @@ export function DomainAuthConfigPage() {
   const leftPane = (
     <Card className="h-full flex flex-col overflow-hidden p-0">
       <div className="p-4 border-b border-border bg-surface">
-        <h3 className="text-base font-semibold text-text-primary">Domain Structure</h3>
+        <h3 className="text-base font-semibold text-text-primary">
+          Domain Structure
+        </h3>
         <p className="text-xs text-text-muted mt-1">
           Pick a domain to configure domain-level authentication.
         </p>
@@ -228,7 +244,9 @@ export function DomainAuthConfigPage() {
             onSelect={setSelectedDomainId}
           />
         ) : (
-          <p className="text-sm text-text-muted">No domains found for this tenant.</p>
+          <p className="text-sm text-text-muted">
+            No domains found for this tenant.
+          </p>
         )}
       </div>
     </Card>
@@ -248,13 +266,20 @@ export function DomainAuthConfigPage() {
         <div className="space-y-6">
           <div className="flex items-start justify-between border-b border-border pb-4">
             <div>
-              <h2 className="text-xl font-bold text-text-primary">Domain Auth Config</h2>
+              <h2 className="text-xl font-bold text-text-primary">
+                Domain Auth Config
+              </h2>
               <p className="text-sm text-text-muted mt-1">
-                Domain: <span className="text-accent font-semibold">{selectedDomain?.domainName || selectedDomainId}</span>
+                Domain:{" "}
+                <span className="text-accent font-semibold">
+                  {selectedDomain?.domainName || selectedDomainId}
+                </span>
               </p>
               <p className="text-xs text-text-muted mt-1">
                 Source: {formState.sourceType || "tenant"}
-                {formState.sourceDomainId ? ` (${formState.sourceDomainId})` : ""}
+                {formState.sourceDomainId
+                  ? ` (${formState.sourceDomainId})`
+                  : ""}
               </p>
             </div>
             <div className="flex gap-2">
@@ -284,7 +309,9 @@ export function DomainAuthConfigPage() {
           )}
 
           <div className="space-y-4">
-            <h3 className="text-sm font-semibold text-text-primary">Authentication Methods</h3>
+            <h3 className="text-sm font-semibold text-text-primary">
+              Authentication Methods
+            </h3>
             <div className="grid grid-cols-1 gap-3">
               <Toggle
                 checked={formState.passwordEnabled}
@@ -314,7 +341,9 @@ export function DomainAuthConfigPage() {
           </div>
 
           <div className="space-y-4">
-            <h3 className="text-sm font-semibold text-text-primary">Password Policy</h3>
+            <h3 className="text-sm font-semibold text-text-primary">
+              Password Policy
+            </h3>
             <div className="grid grid-cols-2 gap-3">
               <Input
                 label="Min Length"
@@ -322,7 +351,11 @@ export function DomainAuthConfigPage() {
                 min={4}
                 max={64}
                 value={formState.passwordPolicy.minLength}
-                onChange={(e) => updatePasswordPolicy({ minLength: Number(e.target.value) || 0 })}
+                onChange={(e) =>
+                  updatePasswordPolicy({
+                    minLength: Number(e.target.value) || 0,
+                  })
+                }
               />
               <Input
                 label="Expiry Days"
@@ -330,7 +363,11 @@ export function DomainAuthConfigPage() {
                 min={0}
                 max={365}
                 value={formState.passwordPolicy.expiryDays}
-                onChange={(e) => updatePasswordPolicy({ expiryDays: Number(e.target.value) || 0 })}
+                onChange={(e) =>
+                  updatePasswordPolicy({
+                    expiryDays: Number(e.target.value) || 0,
+                  })
+                }
               />
             </div>
             <div className="grid grid-cols-1 gap-3">
@@ -349,14 +386,18 @@ export function DomainAuthConfigPage() {
               <Toggle
                 checked={formState.passwordPolicy.requireSpecialChars}
                 disabled={isReadOnly}
-                onChange={(v) => updatePasswordPolicy({ requireSpecialChars: v })}
+                onChange={(v) =>
+                  updatePasswordPolicy({ requireSpecialChars: v })
+                }
                 label="Require Special Character"
               />
             </div>
           </div>
 
           <div className="space-y-4">
-            <h3 className="text-sm font-semibold text-text-primary">Session Rules</h3>
+            <h3 className="text-sm font-semibold text-text-primary">
+              Session Rules
+            </h3>
             <div className="grid grid-cols-3 gap-3">
               <Input
                 label="Timeout (min)"
@@ -364,7 +405,11 @@ export function DomainAuthConfigPage() {
                 min={5}
                 max={1440}
                 value={formState.sessionTimeoutMinutes}
-                onChange={(e) => patchForm({ sessionTimeoutMinutes: Number(e.target.value) || 0 })}
+                onChange={(e) =>
+                  patchForm({
+                    sessionTimeoutMinutes: Number(e.target.value) || 0,
+                  })
+                }
               />
               <Input
                 label="Max Attempts"
@@ -372,7 +417,9 @@ export function DomainAuthConfigPage() {
                 min={1}
                 max={20}
                 value={formState.maxLoginAttempts}
-                onChange={(e) => patchForm({ maxLoginAttempts: Number(e.target.value) || 0 })}
+                onChange={(e) =>
+                  patchForm({ maxLoginAttempts: Number(e.target.value) || 0 })
+                }
               />
               <Input
                 label="Lockout (min)"
@@ -380,7 +427,11 @@ export function DomainAuthConfigPage() {
                 min={1}
                 max={1440}
                 value={formState.lockoutDurationMinutes}
-                onChange={(e) => patchForm({ lockoutDurationMinutes: Number(e.target.value) || 0 })}
+                onChange={(e) =>
+                  patchForm({
+                    lockoutDurationMinutes: Number(e.target.value) || 0,
+                  })
+                }
               />
             </div>
           </div>
@@ -401,9 +452,12 @@ export function DomainAuthConfigPage() {
     <div className="p-8 h-[calc(100vh-4rem)] flex flex-col gap-4">
       <div className="flex justify-between items-center bg-surface border border-border rounded-xl p-3 px-5 shadow-sm">
         <div>
-          <h1 className="text-lg font-semibold text-text-primary">Domain Authentication Configuration</h1>
+          <h1 className="text-lg font-semibold text-text-primary">
+            Domain Authentication Configuration
+          </h1>
           <p className="text-xs text-text-muted mt-0.5">
-            Configure auth at domain-level and optionally cascade to children that do not already have overrides.
+            Configure auth at domain-level and optionally cascade to children
+            that do not already have overrides.
           </p>
         </div>
       </div>

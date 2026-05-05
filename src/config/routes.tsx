@@ -20,13 +20,14 @@ import { SessionRulesPage } from "../pages/SessionRulesPage";
 import { AuthConfigDoc } from "../pages/AuthConfigDoc";
 import { DomainConfigurationPage } from "../pages/DomainConfigurationPage";
 import { DomainAuthConfigPage } from "../pages/DomainAuthConfigPage";
-import { MailingListsPage } from "../pages/MailingListsPage"; // NEW IMPORT
+import { MailingListsPage } from "../pages/MailingListsPage";
 import { AcademicPoliciesPage } from "../pages/AcademicPoliciesPage";
 import { InfrastructureAllocationPage } from "../pages/InfrastructureAllocationPage";
 import { CentralAuthPage } from "../pages/CentralAuthPage";
 import { TenantSignupPage } from "../pages/TenantSignupPage";
 import { motion } from "framer-motion";
-
+import AttendanceEventsPage from "../pages/AttendanceEventsPage";
+import MarkAttendancePage from "../pages/MarkAttendancePage";
 // ── 404 Component ─────────────────────────────────────────────────────────────
 const NotFoundPage = () => (
   <div
@@ -156,7 +157,26 @@ const mfaRoute = createRoute({
     </AuthLayout>
   ),
 });
+// NEW: Attendance Events Route
+const attendanceEventsRoute = createRoute({
+  getParentRoute: () => authConfigRoute,
+  path: "/attendance-events",
+  component: AttendanceEventsPage,
+});
 
+// Public Attendance Marking Route (No Auth Required)
+const markAttendanceRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: "/mark_attendance/$eventId",
+  validateSearch: (search) => ({
+    callbackUrl: search.callbackUrl as string | undefined,
+  }),
+  component: () => (
+    <AuthLayout>
+      <MarkAttendancePage />
+    </AuthLayout>
+  ),
+});
 const docRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: "/auth-config-doc",
@@ -274,6 +294,7 @@ const routeTree = rootRoute.addChildren([
   tenantSignupRoute,
   mfaRoute,
   docRoute,
+  markAttendanceRoute,
   authConfigRoute.addChildren([
     authConfigIndexRoute,
     passwordPolicyRoute,
@@ -284,6 +305,7 @@ const routeTree = rootRoute.addChildren([
     mailingListsRoute,
     academicPoliciesRoute,
     infrastructureRoute,
+    attendanceEventsRoute,
   ]),
 ]);
 
