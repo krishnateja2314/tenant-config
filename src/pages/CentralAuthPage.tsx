@@ -127,6 +127,68 @@ export function CentralAuthPage() {
     loadAuthConfig();
   }, [tenantId, routeDomainId]);
 
+  const processIdentifyResponse = async (response: any) => {
+    const passwordEnabled = response.data?.authConfig?.passwordEnabled;
+    const ssoEnabled = response.data?.authConfig?.ssoEnabled;
+    const otpEnabled = response.data?.authConfig?.otpEnabled;
+
+    if (!passwordEnabled && !ssoEnabled && otpEnabled) {
+      setInfo("OTP is enabled for this tenant. Sending a code to your email.");
+      const otpResponse = await loginUser({
+        tenantId: tenantId!,
+        email,
+        domainId: routeDomainId,
+      });
+
+      if (!otpResponse.success) {
+        setError(otpResponse.message);
+        return;
+      }
+
+      if (otpResponse.data?.requiresMFA && otpResponse.data?.sessionToken) {
+        setSessionToken(otpResponse.data.sessionToken);
+        setStep("verifyOtp");
+        return;
+      }
+
+      if (otpResponse.data?.token) {
+        setFinalToken(otpResponse.data.token);
+        setStep("success");
+        redirectCallback(otpResponse.data.token);
+        return;
+      }
+
+      setStep("verifyOtp");
+      return;
+    }
+
+    if (!passwordEnabled && ssoEnabled) {
+      setInfo(
+        otpEnabled
+          ? "SSO and OTP are enabled for this tenant. Choose your identity provider or request an OTP."
+          : "SSO is enabled for this tenant. Use your identity provider to continue.",
+      );
+      setStep("identify");
+      return;
+    }
+
+    if (passwordEnabled) {
+      setInfo("Password is required by your tenant configuration.");
+      setStep("challenge");
+      return;
+    }
+
+    if (otpEnabled) {
+      setInfo(
+        "OTP is enabled for this tenant. Use the button below to request a code.",
+      );
+      setStep("identify");
+      return;
+    }
+
+    setStep("success");
+  };
+
   const handleIdentify = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
@@ -161,65 +223,7 @@ export function CentralAuthPage() {
     setTotpSecret(null);
     setOtpauthUrl(null);
 
-    const passwordEnabled = response.data?.authConfig?.passwordEnabled;
-    const ssoEnabled = response.data?.authConfig?.ssoEnabled;
-    const otpEnabled = response.data?.authConfig?.otpEnabled;
-
-    if (!passwordEnabled && !ssoEnabled && otpEnabled) {
-      setInfo("OTP is enabled for this tenant. Sending a code to your email.");
-      const otpResponse = await loginUser({
-        tenantId,
-        email,
-        domainId: routeDomainId,
-      });
-      if (!otpResponse.success) {
-        setError(otpResponse.message);
-        return;
-      }
-      if (otpResponse.data?.requiresMFA && otpResponse.data?.sessionToken) {
-        setSessionToken(otpResponse.data.sessionToken);
-        setStep("verifyOtp");
-        return;
-      }
-      if (otpResponse.data?.token) {
-        setFinalToken(otpResponse.data.token);
-        setStep("success");
-        redirectCallback(otpResponse.data.token);
-        return;
-      }
-      setStep("verifyOtp");
-      return;
-    }
-
-    if (!passwordEnabled && ssoEnabled) {
-      if (otpEnabled) {
-        setInfo(
-          "SSO and OTP are enabled for this tenant. Choose your identity provider or request an OTP.",
-        );
-      } else {
-        setInfo(
-          "SSO is enabled for this tenant. Use your identity provider to continue.",
-        );
-      }
-      setStep("identify");
-      return;
-    }
-
-    if (passwordEnabled) {
-      setInfo("Password is required by your tenant configuration.");
-      setStep("challenge");
-      return;
-    }
-
-    if (otpEnabled) {
-      setInfo(
-        "OTP is enabled for this tenant. Use the button below to request a code.",
-      );
-      setStep("identify");
-      return;
-    }
-
-    setStep("success");
+    await processIdentifyResponse(response);
   };
 
   const redirectCallback = (token: string) => {
@@ -489,9 +493,16 @@ export function CentralAuthPage() {
 
       {step === "challenge" && (
         <form onSubmit={handleLogin} className="space-y-5">
-          <Input label="Email Address" type="email" value={email} readOnly />
+          <Input
+            id="central-auth-email"
+            label="Email Address"
+            type="email"
+            value={email}
+            readOnly
+          />
           {authConfig?.passwordEnabled && (
             <Input
+              id="central-auth-password"
               label="Password"
               type="password"
               placeholder="Enter your password"
@@ -532,8 +543,15 @@ export function CentralAuthPage() {
 
       {step === "verifyOtp" && (
         <form onSubmit={handleVerifyOtp} className="space-y-5">
-          <Input label="Email Address" type="email" value={email} readOnly />
           <Input
+            id="central-auth-email"
+            label="Email Address"
+            type="email"
+            value={email}
+            readOnly
+          />
+          <Input
+            id="central-auth-otp"
             label="OTP Code"
             type="text"
             placeholder="Enter OTP"
@@ -548,7 +566,13 @@ export function CentralAuthPage() {
 
       {step === "verifyTotp" && (
         <form onSubmit={handleVerifyTotp} className="space-y-5">
-          <Input label="Email Address" type="email" value={email} readOnly />
+          <Input
+            id="central-auth-email"
+            label="Email Address"
+            type="email"
+            value={email}
+            readOnly
+          />
           {otpauthUrl && (
             <div className="rounded-2xl border border-border bg-surface-2 p-4">
               <p className="text-sm font-semibold text-text-primary mb-3">

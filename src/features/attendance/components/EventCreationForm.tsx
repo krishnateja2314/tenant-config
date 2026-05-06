@@ -31,7 +31,7 @@ export default function EventCreationForm({
   const { createEvent, loading } = useAttendanceStore();
   const { treeQuery } = useDomains();
   const { error, setError } = useErrorMessage();
-  
+
   const domains = treeQuery.data || [];
   const [eventType, setEventType] = useState<"ONE_TIME" | "RECURRING">(
     "ONE_TIME",
@@ -140,7 +140,9 @@ export default function EventCreationForm({
                 }
                 className="h-4 w-4 text-accent"
               />
-              <span className="ml-2 text-sm text-text-primary">One-Time Event</span>
+              <span className="ml-2 text-sm text-text-primary">
+                One-Time Event
+              </span>
             </label>
             <label className="flex items-center">
               <input
@@ -162,6 +164,7 @@ export default function EventCreationForm({
 
         <div className="grid grid-cols-2 gap-4">
           <Input
+            id="event-title"
             label="Event Title"
             name="title"
             placeholder="e.g., Biology Lab Session"
@@ -171,13 +174,19 @@ export default function EventCreationForm({
           />
 
           <div>
-            <label className="block text-sm font-medium text-text-primary mb-2">
+            <label
+              htmlFor="event-target-domain"
+              className="block text-sm font-medium text-text-primary mb-2"
+            >
               Target Domain
             </label>
             <select
+              id="event-target-domain"
               name="domainId"
               value={formData.domainId}
-              onChange={(e) => setFormData(prev => ({ ...prev, domainId: e.target.value }))}
+              onChange={(e) =>
+                setFormData((prev) => ({ ...prev, domainId: e.target.value }))
+              }
               className="w-full rounded-xl border border-border bg-surface px-4 py-3 text-sm text-text-primary outline-none transition focus:border-accent focus:ring-2 focus:ring-accent/20"
             >
               <option value="">Whole Tenant (All Users)</option>
@@ -191,10 +200,14 @@ export default function EventCreationForm({
         </div>
 
         <div>
-          <label className="block text-sm font-medium text-text-primary mb-2">
+          <label
+            htmlFor="event-description"
+            className="block text-sm font-medium text-text-primary mb-2"
+          >
             Description
           </label>
           <textarea
+            id="event-description"
             name="description"
             placeholder="Optional description"
             value={formData.description}
@@ -206,6 +219,7 @@ export default function EventCreationForm({
 
         <div className="grid grid-cols-2 gap-4">
           <Input
+            id="event-start-time"
             label="Start Time"
             name="startTime"
             type="time"
@@ -214,6 +228,7 @@ export default function EventCreationForm({
             required
           />
           <Input
+            id="event-end-time"
             label="End Time"
             name="endTime"
             type="time"
@@ -225,6 +240,7 @@ export default function EventCreationForm({
 
         {eventType === "ONE_TIME" ? (
           <Input
+            id="event-date"
             label="Event Date"
             name="scheduledDate"
             type="date"
@@ -236,6 +252,7 @@ export default function EventCreationForm({
           <>
             <div className="grid grid-cols-2 gap-4">
               <Input
+                id="recurrence-start-date"
                 label="Recurrence Start Date"
                 name="recurrenceStartDate"
                 type="date"
@@ -244,6 +261,7 @@ export default function EventCreationForm({
                 required
               />
               <Input
+                id="recurrence-end-date"
                 label="Recurrence End Date"
                 name="recurrenceEndDate"
                 type="date"

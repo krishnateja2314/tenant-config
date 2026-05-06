@@ -154,6 +154,26 @@ export function TreeCanvas() {
     };
   };
 
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLDivElement>) => {
+    const delta = e.shiftKey ? 20 : 8;
+    if (e.key === "ArrowLeft") {
+      setPosition((current) => ({ x: current.x + delta, y: current.y }));
+      e.preventDefault();
+    }
+    if (e.key === "ArrowRight") {
+      setPosition((current) => ({ x: current.x - delta, y: current.y }));
+      e.preventDefault();
+    }
+    if (e.key === "ArrowUp") {
+      setPosition((current) => ({ x: current.x, y: current.y + delta }));
+      e.preventDefault();
+    }
+    if (e.key === "ArrowDown") {
+      setPosition((current) => ({ x: current.x, y: current.y - delta }));
+      e.preventDefault();
+    }
+  };
+
   const handleMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
     if (!isDragging.current || !containerRef.current) return;
     setPosition({
@@ -203,10 +223,14 @@ export function TreeCanvas() {
   return (
     <div
       ref={containerRef}
+      role="application"
+      aria-label="Domain tree workspace"
+      tabIndex={0}
       onMouseDown={handleMouseDown}
       onMouseMove={handleMouseMove}
       onMouseUp={handleMouseUp}
       onMouseLeave={handleMouseUp}
+      onKeyDown={handleKeyDown}
       className="relative w-full h-full overflow-hidden bg-surface-2 cursor-move"
       style={{
         backgroundImage: `

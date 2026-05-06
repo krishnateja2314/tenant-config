@@ -121,10 +121,14 @@ export const AuditLogViewer = () => {
       >
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <div>
-            <label className="block text-sm font-medium text-text-primary mb-2">
+            <label
+              htmlFor="audit-log-student-id"
+              className="block text-sm font-medium text-text-primary mb-2"
+            >
               Student ID
             </label>
             <input
+              id="audit-log-student-id"
               type="text"
               placeholder="Enter Student ID or User Name"
               value={filterStudentId}
@@ -133,10 +137,14 @@ export const AuditLogViewer = () => {
             />
           </div>
           <div>
-            <label className="block text-sm font-medium text-text-primary mb-2">
+            <label
+              htmlFor="audit-log-decision"
+              className="block text-sm font-medium text-text-primary mb-2"
+            >
               Decision
             </label>
             <select
+              id="audit-log-decision"
               value={filterDecision}
               onChange={(e) =>
                 setFilterDecision(e.target.value as "" | "ALLOWED" | "DENIED")
@@ -220,7 +228,9 @@ export const AuditLogViewer = () => {
                       )}
                     </td>
                     <td className="px-4 py-4 text-text-muted">
-                      {log.requiredThreshold !== undefined ? `${log.requiredThreshold}%` : "N/A"}
+                      {log.requiredThreshold !== undefined
+                        ? `${log.requiredThreshold}%`
+                        : "N/A"}
                     </td>
                     <td className="px-4 py-4">
                       {log.decision ? (

@@ -17,6 +17,16 @@ export function ResizableLayout({ leftPane, rightPane }: ResizableLayoutProps) {
     document.body.style.userSelect = "none"; // Prevent text selection while dragging
   };
 
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLButtonElement>) => {
+    const delta = e.shiftKey ? 5 : 2;
+    if (e.key === "ArrowLeft") {
+      setLeftPaneWidth(Math.max(20, leftPaneWidth - delta));
+    }
+    if (e.key === "ArrowRight") {
+      setLeftPaneWidth(Math.min(80, leftPaneWidth + delta));
+    }
+  };
+
   const handleMouseUp = () => {
     isDragging.current = false;
     document.body.style.cursor = "default";
@@ -60,12 +70,15 @@ export function ResizableLayout({ leftPane, rightPane }: ResizableLayoutProps) {
       </div>
 
       {/* RESIZER HANDLE */}
-      <div
+      <button
+        type="button"
         onMouseDown={handleMouseDown}
+        onKeyDown={handleKeyDown}
         className="w-4 flex-shrink-0 cursor-col-resize hover:bg-surface-2 active:bg-surface-2 transition-colors flex items-center justify-center group rounded-lg"
+        aria-label="Resize panels"
       >
         <div className="h-12 w-1 bg-border group-hover:bg-accent rounded-full transition-colors" />
-      </div>
+      </button>
 
       {/* RIGHT PANE */}
       <div

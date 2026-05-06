@@ -1,5 +1,11 @@
 import { useState, useEffect } from "react";
-import { Card, Button, Badge, Spinner, Alert } from "../../../shared/components";
+import {
+  Card,
+  Button,
+  Badge,
+  Spinner,
+  Alert,
+} from "../../../shared/components";
 import { getEventRecords, overrideAttendance } from "../services/attendanceApi";
 import { useErrorMessage } from "../../../hooks/useErrorMessage";
 
@@ -86,10 +92,14 @@ export default function EventAttendanceModal({
 
         <div className="bg-surface-2 p-4 rounded-xl border border-border mb-6 flex flex-col sm:flex-row gap-3 items-end">
           <div className="flex-1 w-full">
-            <label className="block text-xs font-medium text-text-muted mb-1">
+            <label
+              htmlFor="attendance-override-email"
+              className="block text-xs font-medium text-text-muted mb-1"
+            >
               Manual Override (Email)
             </label>
             <input
+              id="attendance-override-email"
               type="email"
               value={overrideEmail}
               onChange={(e) => setOverrideEmail(e.target.value)}
@@ -155,7 +165,11 @@ export default function EventAttendanceModal({
                       <td className="px-4 py-3 text-right">
                         <button
                           onClick={() => {
-                            if (confirm("Are you sure you want to revoke attendance for this student?")) {
+                            if (
+                              confirm(
+                                "Are you sure you want to revoke attendance for this student?",
+                              )
+                            ) {
                               handleOverride(record.userId?.email, "UNMARK");
                             }
                           }}

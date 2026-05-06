@@ -193,10 +193,14 @@ export const PolicyManager = () => {
         >
           <div className="space-y-5">
             <div>
-              <label className="mb-2 block text-sm font-semibold text-text-primary">
+              <label
+                htmlFor="policy-domain-select"
+                className="mb-2 block text-sm font-semibold text-text-primary"
+              >
                 Apply to Domain
               </label>
               <select
+                id="policy-domain-select"
                 value={formData.domainId || ""}
                 onChange={(e) =>
                   setFormData({
@@ -216,10 +220,14 @@ export const PolicyManager = () => {
             </div>
 
             <div>
-              <label className="mb-2 block text-sm font-semibold text-text-primary">
+              <label
+                htmlFor="policy-threshold-input"
+                className="mb-2 block text-sm font-semibold text-text-primary"
+              >
                 Attendance Threshold (%)
               </label>
               <Input
+                id="policy-threshold-input"
                 type="number"
                 min={MIN_THRESHOLD}
                 max={MAX_THRESHOLD}
@@ -227,7 +235,7 @@ export const PolicyManager = () => {
                 onChange={(e) =>
                   setFormData({
                     ...formData,
-                    threshold: parseInt(e.target.value, 10),
+                    threshold: Number.parseInt(e.target.value, 10),
                   })
                 }
                 className="rounded-2xl"
@@ -235,10 +243,14 @@ export const PolicyManager = () => {
             </div>
 
             <div>
-              <label className="mb-2 block text-sm font-semibold text-text-primary">
+              <label
+                htmlFor="policy-description-textarea"
+                className="mb-2 block text-sm font-semibold text-text-primary"
+              >
                 Description
               </label>
               <textarea
+                id="policy-description-textarea"
                 value={formData.description || ""}
                 onChange={(e) =>
                   setFormData({

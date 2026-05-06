@@ -16,7 +16,11 @@ type PanelMode =
   | { kind: "create"; domainId: string; domainName: string };
 
 const statusBadgeVariant = (s: string) =>
-  s === "ACTIVE" ? "success" as const : s === "SUSPENDED" ? "error" as const : "warning" as const;
+  s === "ACTIVE"
+    ? ("success" as const)
+    : s === "SUSPENDED"
+      ? ("error" as const)
+      : ("warning" as const);
 
 export function InfrastructureAllocationPage() {
   const admin = useAuthStore((s) => s.admin);
@@ -50,15 +54,15 @@ export function InfrastructureAllocationPage() {
         infrastructures.map((i) =>
           typeof i.domainId === "string"
             ? i.domainId
-            : (i.domainId as any)?._id || i.domainId
-        )
+            : (i.domainId as any)?._id || i.domainId,
+        ),
       ),
-    [infrastructures]
+    [infrastructures],
   );
 
   const availableDomains = useMemo(
     () => (treeQuery.data ?? []).filter((d) => !allocatedDomainIds.has(d._id)),
-    [treeQuery.data, allocatedDomainIds]
+    [treeQuery.data, allocatedDomainIds],
   );
 
   // Auto-select first allocation on load
@@ -68,11 +72,14 @@ export function InfrastructureAllocationPage() {
     }
   }, [infrastructures]);
 
-  const selectedId = panel.kind === "edit"
-    ? (typeof panel.infra.domainId === "string" ? panel.infra.domainId : (panel.infra.domainId as any)?._id)
-    : panel.kind === "create"
-    ? panel.domainId
-    : null;
+  const selectedId =
+    panel.kind === "edit"
+      ? typeof panel.infra.domainId === "string"
+        ? panel.infra.domainId
+        : (panel.infra.domainId as any)?._id
+      : panel.kind === "create"
+        ? panel.domainId
+        : null;
 
   const handleSelectInfra = (infra: Infrastructure) => {
     setPanel({ kind: "edit", infra });
@@ -175,10 +182,12 @@ export function InfrastructureAllocationPage() {
 
                   <div className="mt-2 grid grid-cols-3 gap-2 text-[11px] text-text-muted">
                     <span>
-                      💾 {infra.storageQuota.usedGB}/{infra.storageQuota.totalGB} GB
+                      💾 {infra.storageQuota.usedGB}/
+                      {infra.storageQuota.totalGB} GB
                     </span>
                     <span>
-                      ⚡ {infra.computeLimit.cpuCores}c / {infra.computeLimit.memoryGB}GB
+                      ⚡ {infra.computeLimit.cpuCores}c /{" "}
+                      {infra.computeLimit.memoryGB}GB
                     </span>
                     <span>🔄 {infra.computeLimit.maxConcurrentJobs} jobs</span>
                   </div>
@@ -314,10 +323,15 @@ export function InfrastructureAllocationPage() {
         </div>
         <div className="flex items-center gap-3 text-xs text-text-muted">
           <span>
-            {infrastructures.length} allocation{infrastructures.length !== 1 ? "s" : ""}
+            {infrastructures.length} allocation
+            {infrastructures.length !== 1 ? "s" : ""}
           </span>
           <span className="text-emerald-400">
-            {infrastructures.filter((i) => i.allocationStatus === "ACTIVE").length} active
+            {
+              infrastructures.filter((i) => i.allocationStatus === "ACTIVE")
+                .length
+            }{" "}
+            active
           </span>
         </div>
       </div>
@@ -336,7 +350,11 @@ function NewAllocationButton({
   domainsLoading,
   onCreate,
 }: {
-  domains: { _id: string; domainName: string; metadata?: { domainType?: string } }[];
+  domains: {
+    _id: string;
+    domainName: string;
+    metadata?: { domainType?: string };
+  }[];
   domainsLoading: boolean;
   onCreate: (id: string, name: string) => void;
 }) {
@@ -357,7 +375,15 @@ function NewAllocationButton({
         {open && (
           <>
             {/* Backdrop */}
-            <div className="fixed inset-0 z-40" onClick={() => setOpen(false)} />
+            <button
+              type="button"
+              aria-label="Close allocation menu"
+              className="fixed inset-0 z-40"
+              onClick={() => setOpen(false)}
+              onKeyDown={(e) => {
+                if (e.key === "Escape") setOpen(false);
+              }}
+            />
 
             <motion.div
               initial={{ opacity: 0, y: -6, scale: 0.95 }}

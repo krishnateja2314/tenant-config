@@ -38,6 +38,52 @@ export function DomainConfigurationPage() {
     }
   }, [treeQuery.data]);
 
+  const resolveParentId = (
+    parentId: string | null | undefined,
+    tempIdMap: Map<string, string>,
+  ) => {
+    if (!parentId) return null;
+    return tempIdMap.has(parentId) ? tempIdMap.get(parentId) || null : parentId;
+  };
+
+  const applyCreateMutation = async (
+    mutation: any,
+    tempIdMap: Map<string, string>,
+  ) => {
+    const created = await domainApi.create(admin!.tenantId, {
+      domainName: mutation.data?.domainName || "",
+      parentDomainId: resolveParentId(mutation.data?.parentDomainId, tempIdMap),
+      domainAdminId: mutation.data?.domainAdminId ?? null,
+      metadata: {
+        domainType: mutation.data?.metadata?.domainType || "DEPARTMENT",
+        description: mutation.data?.metadata?.description || "",
+      },
+    });
+
+    tempIdMap.set(mutation.id, created._id);
+  };
+
+  const applyUpdateMutation = async (
+    mutation: any,
+    tempIdMap: Map<string, string>,
+  ) => {
+    const targetId = tempIdMap.get(mutation.id) || mutation.id;
+    if (targetId.startsWith("temp-")) return;
+
+    await domainApi.update(targetId, {
+      domainName: mutation.data?.domainName,
+      parentDomainId: resolveParentId(mutation.data?.parentDomainId, tempIdMap),
+      domainAdminId: mutation.data?.domainAdminId,
+      metadata: mutation.data?.metadata,
+    });
+  };
+
+  const applyDeleteMutation = async (mutation: any) => {
+    const targetId = mutation.id;
+    if (targetId.startsWith("temp-")) return;
+    await domainApi.delete(targetId);
+  };
+
   const handleSaveWorkspace = async () => {
     if (!admin?.tenantId || pendingMutations.length === 0 || isSaving) {
       return;
@@ -50,52 +96,17 @@ export function DomainConfigurationPage() {
 
       for (const mutation of pendingMutations) {
         if (mutation.type === "CREATE") {
-          const parentId = mutation.data?.parentDomainId;
-          const resolvedParentId = parentId && tempIdMap.has(parentId)
-            ? tempIdMap.get(parentId) || null
-            : parentId;
-
-          const created = await domainApi.create(admin.tenantId, {
-            domainName: mutation.data?.domainName || "",
-            parentDomainId: resolvedParentId ?? null,
-            domainAdminId: mutation.data?.domainAdminId ?? null,
-            metadata: {
-              domainType: mutation.data?.metadata?.domainType || "DEPARTMENT",
-              description: mutation.data?.metadata?.description || "",
-            },
-          });
-
-          tempIdMap.set(mutation.id, created._id);
+          await applyCreateMutation(mutation, tempIdMap);
           continue;
         }
 
-        const targetId = tempIdMap.get(mutation.id) || mutation.id;
-
         if (mutation.type === "UPDATE") {
-          if (targetId.startsWith("temp-")) {
-            continue;
-          }
-
-          const parentId = mutation.data?.parentDomainId;
-          const resolvedParentId = parentId && tempIdMap.has(parentId)
-            ? tempIdMap.get(parentId) || null
-            : parentId;
-
-          await domainApi.update(targetId, {
-            domainName: mutation.data?.domainName,
-            parentDomainId: resolvedParentId,
-            domainAdminId: mutation.data?.domainAdminId,
-            metadata: mutation.data?.metadata,
-          });
+          await applyUpdateMutation(mutation, tempIdMap);
           continue;
         }
 
         if (mutation.type === "DELETE") {
-          if (targetId.startsWith("temp-")) {
-            continue;
-          }
-
-          await domainApi.delete(targetId);
+          await applyDeleteMutation(mutation);
         }
       }
 

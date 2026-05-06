@@ -22,37 +22,47 @@ type FormErrors = {
   confirmPassword?: string;
 };
 
+const validatePassword = (
+  password: string,
+  passwordPolicy?: any,
+): string | undefined => {
+  if (!password) return "Password is required.";
+
+  const policy = passwordPolicy;
+  if (policy) {
+    if (password.length < policy.minLength)
+      return `Password must be at least ${policy.minLength} characters.`;
+    if (policy.requireUppercase && !/[A-Z]/.test(password))
+      return "Password must contain at least one uppercase letter.";
+    if (policy.requireNumbers && !/\d/.test(password))
+      return "Password must contain at least one number.";
+    if (
+      policy.requireSpecialChars &&
+      !/[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]/.test(password)
+    )
+      return "Password must contain at least one special character.";
+  } else if (password.length < 8) {
+    return "Password must be at least 8 characters.";
+  }
+
+  return undefined;
+};
+
 const validate = (form: FormState, passwordPolicy?: any): FormErrors => {
   const errors: FormErrors = {};
   if (!form.name.trim()) errors.name = "Full name is required.";
   if (!form.email.trim()) errors.email = "Email is required.";
   else if (!isValidEmailAddress(form.email))
     errors.email = "Enter a valid email address.";
-  if (!form.password) errors.password = "Password is required.";
-  else {
-    if (passwordPolicy) {
-      if (form.password.length < passwordPolicy.minLength)
-        errors.password = `Password must be at least ${passwordPolicy.minLength} characters.`;
-      if (passwordPolicy.requireUppercase && !/[A-Z]/.test(form.password))
-        errors.password =
-          "Password must contain at least one uppercase letter.";
-      if (passwordPolicy.requireNumbers && !/\d/.test(form.password))
-        errors.password = "Password must contain at least one number.";
-      if (
-        passwordPolicy.requireSpecialChars &&
-        !/[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]/.test(form.password)
-      )
-        errors.password =
-          "Password must contain at least one special character.";
-    } else {
-      if (form.password.length < 8)
-        errors.password = "Password must be at least 8 characters.";
-    }
-  }
+
+  const passwordError = validatePassword(form.password, passwordPolicy);
+  if (passwordError) errors.password = passwordError;
+
   if (!form.confirmPassword)
     errors.confirmPassword = "Please confirm your password.";
   else if (form.password !== form.confirmPassword)
     errors.confirmPassword = "Passwords do not match.";
+
   return errors;
 };
 
@@ -153,6 +163,7 @@ export function TenantSignupPage() {
 
       <form onSubmit={handleSubmit} className="space-y-5">
         <Input
+          id="tenant-signup-name"
           label="Full Name"
           type="text"
           placeholder="Jane Doe"
@@ -162,6 +173,7 @@ export function TenantSignupPage() {
           autoFocus
         />
         <Input
+          id="tenant-signup-email"
           label="Email Address"
           type="email"
           placeholder="user@tenant.com"
@@ -171,6 +183,7 @@ export function TenantSignupPage() {
           autoComplete="email"
         />
         <Input
+          id="tenant-signup-password"
           label="Password"
           type="password"
           placeholder="Create a password"
@@ -180,6 +193,7 @@ export function TenantSignupPage() {
           autoComplete="new-password"
         />
         <Input
+          id="tenant-signup-confirm-password"
           label="Confirm Password"
           type="password"
           placeholder="Confirm password"

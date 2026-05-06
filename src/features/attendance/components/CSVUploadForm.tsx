@@ -111,10 +111,14 @@ export default function CSVUploadForm({
 
       <form onSubmit={handleSubmit} className="space-y-6">
         <div>
-          <label className="block text-sm font-medium text-text-primary mb-2">
+          <label
+            htmlFor="csv-upload-event-select"
+            className="block text-sm font-medium text-text-primary mb-2"
+          >
             Select Event
           </label>
           <select
+            id="csv-upload-event-select"
             value={selectedEventId}
             onChange={(e) => setSelectedEventId(e.target.value)}
             required
@@ -130,11 +134,15 @@ export default function CSVUploadForm({
         </div>
 
         <div>
-          <label className="block text-sm font-medium text-text-primary mb-2">
+          <label
+            htmlFor="csv-upload-file-input"
+            className="block text-sm font-medium text-text-primary mb-2"
+          >
             Upload CSV File
           </label>
           <div className="border-2 border-dashed border-border rounded-lg p-6 hover:border-accent cursor-pointer transition bg-surface">
             <input
+              id="csv-upload-file-input"
               type="file"
               accept=".csv"
               onChange={handleFileUpload}
@@ -151,10 +159,16 @@ export default function CSVUploadForm({
 
         {csvRecords.length > 0 && (
           <div>
-            <label className="block text-sm font-medium text-text-primary mb-2">
+            <label
+              htmlFor="csv-upload-preview-table"
+              className="block text-sm font-medium text-text-primary mb-2"
+            >
               Preview ({csvRecords.length} records)
             </label>
-            <div className="overflow-x-auto border border-border rounded-md">
+            <div
+              id="csv-upload-preview-table"
+              className="overflow-x-auto border border-border rounded-md"
+            >
               <table className="min-w-full text-sm">
                 <thead className="bg-surface-2 border-b border-border">
                   <tr>
@@ -175,7 +189,9 @@ export default function CSVUploadForm({
                       key={idx}
                       className={idx % 2 === 0 ? "bg-surface" : "bg-surface-2"}
                     >
-                      <td className="px-4 py-2 text-text-primary">{record.date}</td>
+                      <td className="px-4 py-2 text-text-primary">
+                        {record.date}
+                      </td>
                       <td className="px-4 py-2 text-text-primary">
                         {record.start_time}
                       </td>
